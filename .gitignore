@@ -1,0 +1,77 @@
+# Build artifacts
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Others
+*.swp
+*.DS_Store
+
+
+# 환경 설정 파일
+appsettings.Development.json
+appsettings.*.json
+
+# 업로드된 이미지나 미디어 파일
+wwwroot/uploads/
+wwwroot/images/
+wwwroot/files/
+
+# 로그
+logs/
+*.log
+
+# 기타 불필요한 캐시
+*.tmp
+*.cache
+/FineArt.Api/wwwroot/uploads
+
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

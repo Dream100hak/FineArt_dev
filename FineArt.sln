@@ -1,0 +1,43 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FineArt.Api", "FineArt.Api\FineArt.Api.csproj", "{8BFAEDE5-0F9C-4D74-9D8D-CF48742523CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FineArt.Domain", "FineArt.Domain\FineArt.Domain.csproj", "{C26DEB7C-ACAE-4F16-9C42-88C60D472FD0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FineArt.Application", "FineArt.Application\FineArt.Application.csproj", "{EC2DD092-7DBE-4D54-A90B-1A812CCFC098}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FineArt.Infrastructure", "FineArt.Infrastructure\FineArt.Infrastructure.csproj", "{EE68E985-0B29-4AB2-9297-2CDB48F90A83}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8BFAEDE5-0F9C-4D74-9D8D-CF48742523CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BFAEDE5-0F9C-4D74-9D8D-CF48742523CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BFAEDE5-0F9C-4D74-9D8D-CF48742523CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BFAEDE5-0F9C-4D74-9D8D-CF48742523CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C26DEB7C-ACAE-4F16-9C42-88C60D472FD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C26DEB7C-ACAE-4F16-9C42-88C60D472FD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C26DEB7C-ACAE-4F16-9C42-88C60D472FD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C26DEB7C-ACAE-4F16-9C42-88C60D472FD0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC2DD092-7DBE-4D54-A90B-1A812CCFC098}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC2DD092-7DBE-4D54-A90B-1A812CCFC098}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC2DD092-7DBE-4D54-A90B-1A812CCFC098}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC2DD092-7DBE-4D54-A90B-1A812CCFC098}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE68E985-0B29-4AB2-9297-2CDB48F90A83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE68E985-0B29-4AB2-9297-2CDB48F90A83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE68E985-0B29-4AB2-9297-2CDB48F90A83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE68E985-0B29-4AB2-9297-2CDB48F90A83}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		        StartupProject = FineArt.Api
+		        SolutionGuid = {C4EA1404-4BDD-455A-9955-5693F567C365}
+	EndGlobalSection
+EndGlobal
