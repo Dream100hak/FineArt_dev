@@ -1,0 +1,95 @@
+# 🛡 Auth & Security Rules
+
+## 🔹 JWT Handling
+
+### ✅ Token Management
+- Use `lib/auth.js` for:
+  - Reading/storing/clearing tokens and auth state.
+  - Decoding tokens (`decodeJwtPayload`).
+- Only reference `TOKEN_STORAGE_KEY`, `ROLE_STORAGE_KEY`, `EMAIL_STORAGE_KEY` from `lib/api.js`/`lib/auth.js`.
+
+### ✅ Token Storage
+- **Never access `localStorage` directly for auth** in arbitrary components:
+  - Always go through:
+    - `getStoredToken`, `getAuthSnapshot`, `persistAuthSession`, `clearAuthSession`.
+  - For decoded information, prefer `useDecodedAuth`.
+
+### ✅ Token Expiry
+- Token expiry detection must use `isPayloadExpired` in `lib/auth.js`.
+- On expiry:
+  - Call `clearAuthSession`.
+  - UI should react to changed auth state via hooks/events.
+
+## 🔹 Auth State & Context
+
+### ✅ Auth Hooks
+- Use `useAuthContext()` (from `hooks/useAuthContext.js`) for base auth snapshot.
+- Use `useDecodedAuth()` when you need **decoded role/email** from JWT.
+- Never duplicate JWT decoding logic in components.
+
+### ✅ Auth State Synchronization
+- Rely on `AUTH_CHANGE_EVENT` & `storage` events for cross-tab sync.
+- Use `useSyncExternalStore` pattern as seen in `useAuthContext`.
+- If updating auth in new features:
+  - Dispatch `AUTH_CHANGE_EVENT` using `broadcastAuthChange` instead of custom events.
+
+### ✅ Session Management
+- Use `persistAuthSession` / `clearAuthSession` from `lib/auth.js` to manage session.
+- Do not manually write/remove token/role/email from `localStorage` or cookies outside auth/api utilities.
+
+## 🔹 Role-Based Access Control
+
+### ✅ Admin Access
+- Admin-only UI/routes must:
+  - Check `decodedRole === 'admin'`.
+  - Redirect non-admins away (`router.replace('/')` or `/login` depending on auth state).
+- Do not trust only client-side role; backend must also enforce roles (assumed).
+
+### ✅ Protected Routes
+- Protect admin routes:
+  - Check authentication status.
+  - Check admin role.
+  - Redirect to login if not authenticated.
+  - Redirect to home if authenticated but not admin.
+
+### ✅ UI Conditional Rendering
+- Use role checks for conditional UI:
+  - Show admin buttons/links only when `decodedRole === 'admin'`.
+  - Hide sensitive actions from non-admin users.
+
+## 🔹 Security Best Practices
+
+### ✅ Sensitive Data
+- Do not log sensitive information:
+  - Tokens, passwords, or personal data.
+  - Use console warnings/errors carefully.
+
+### ✅ API Security
+- Tokens are automatically injected via Axios interceptor.
+- Do not manually add tokens to requests.
+- Ensure HTTPS in production (handled by backend).
+
+### ✅ Input Validation
+- Validate user inputs:
+  - On client side for UX.
+  - Backend must validate all inputs (assumed).
+- Sanitize data before sending to API.
+
+## 🔹 Auth Flow
+
+### ✅ Login Flow
+- After successful login:
+  - Call `persistAuthSession(token, role, email)`.
+  - Redirect to appropriate page (home or intended destination).
+  - Auth state will sync automatically via events.
+
+### ✅ Logout Flow
+- Call `clearAuthSession()`.
+- Redirect to home page.
+- Clear any cached user data.
+
+### ✅ Auth State Checks
+- Check auth state before:
+  - Rendering protected content.
+  - Making authenticated API calls.
+  - Accessing user-specific data.

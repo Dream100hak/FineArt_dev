@@ -1,0 +1,68 @@
+# 🏗 Architecture Rules
+
+## 🔹 App Structure & Routing
+
+### ✅ Use Next.js App Router
+- Place all routes under `src/app`.
+- Use `page.jsx` for route entry, `layout.jsx` for shared UI.
+- Prefer **Server Components by default**; opt into `'use client'` only when necessary (state, effects, browser APIs).
+
+### ✅ Route Organization
+- Group domain areas into route folders:
+  - `/admin` → admin console & management UIs
+  - `/articles`, `/artists`, `/artworks`, `/exhibitions`, `/boards`, `/sales` → user-facing content
+  - `/login`, `/register` → auth flows
+- Use nested routes for resource detail:
+  - `/articles/[id]`, `/artists/[id]`, `/exhibitions/[id]`, `/sales/[id]`
+  - `/boards/[slug]`, `/boards/[slug]/[id]`, `/boards/[slug]/write`
+
+### ✅ Client vs Server Components
+- **Server Component (default):**
+  - Data fetching (API calls with `async` components).
+  - SEO metadata generation.
+  - Static/SSR-only UI without browser-only APIs.
+- **Client Component:**
+  - Any component using: `useState`, `useEffect`, `useRouter`, `usePathname`, `useSyncExternalStore`, DOM access, `window`, `document`, `localStorage`.
+  - Mark with `'use client'` at the top.
+  - For complex pages, use **Server page + Client "*Client.jsx" child** (e.g. `BoardsDirectoryClient.jsx`).
+
+## 🔹 Data Fetching & API Layer
+
+### ✅ Centralized API Access
+- All HTTP calls **must go through** `src/lib/api.js`.
+- Do not call `axios` directly in components; instead:
+  - Add a wrapper like `getXxx`, `createXxx`, `updateXxx`, `deleteXxx`.
+- Reuse:
+  - `request(callback, label)` for consistent error logging & error surfaces.
+  - `sanitizeParams(params)` to clean up query parameters.
+
+### ✅ Environment Configuration
+- Use `NEXT_PUBLIC_API_URL` as base URL; fallback is `http://localhost:5000`.
+- Do not hardcode API base URLs in components.
+- Keep HTTPS dev overrides inside `lib/api.js` only.
+
+### ✅ Fallback & Resilience
+- When fetching lists/pages, always:
+  - Wrap network calls in `try/catch`.
+  - Provide a **fallback payload** from `lib/*Fallbacks.js` (e.g. `boardFallbacks`, `exhibitions` fallback maps).
+  - Surface friendly error messages in UI: e.g. `"샘플 데이터를 보여줍니다."`.
+- When combining multiple API calls:
+  - Prefer `Promise.allSettled` over `Promise.all` for non-critical data so partial failures don't break the page.
+
+## 🔹 Component Architecture
+
+### ✅ Component Separation
+- Keep components **presentational** where possible; move data fetching and domain logic to:
+  - Server Components (pages/layouts).
+  - Client containers (`*Client.jsx`).
+- Pass normalized data into presentational components instead of raw API responses.
+
+### ✅ Page Structure Pattern
+- **Server Component Page** (`page.jsx`):
+  - Fetches initial data with `async/await`.
+  - Handles errors and fallbacks.
+  - Passes data to Client Component.
+- **Client Component** (`*Client.jsx`):
+  - Handles interactivity, state, and user events.
+  - Receives initial data as props.
+  - Can fetch additional data on user actions.

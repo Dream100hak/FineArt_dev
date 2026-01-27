@@ -1,0 +1,105 @@
+# 📐 Coding & Project Conventions
+
+## 🔹 Naming & File Organization
+
+### ✅ File Names
+- **Components**: `PascalCase` (`TopNav.jsx`, `RichTextEditor.jsx`).
+- **Client-only complex feature components**: `*Client.jsx` suffix (e.g. `BoardsDirectoryClient.jsx`, `AdminArticlesClient.jsx`).
+- **Hooks**: `camelCase` with `use` prefix (`useAuthContext.js`, `useDecodedAuth.js`).
+- **Lib modules**: lowerCamelCase or feature-based (`api.js`, `auth.js`, `boardEvents.js`, `boardFallbacks.js`).
+
+### ✅ Path Aliases
+- Use `@/` alias for imports:
+  - Components: `@/components/TopNav`
+  - Hooks: `@/hooks/useDecodedAuth`
+  - Libs: `@/lib/api`
+- Do not use deep relative paths (`../../..`) if `@/` is available.
+
+### ✅ Directory Structure
+- Keep related files together:
+  - Page + Client component in same folder: `page.jsx` + `*Client.jsx`
+  - Domain-specific components in subfolders: `components/articles/`, `components/boards/`
+  - Shared utilities in `lib/` organized by domain
+
+## 🔹 Functions & Utilities
+
+### ✅ Data Normalization
+- When working with API payloads:
+  - Use or create `normalizeXxx` functions (e.g. `normalizeExhibition`, `normalizeArtworkPreview`).
+  - Handle different naming conventions (`id` vs `Id`, `slug` vs `Slug`, etc.).
+  - Provide safe defaults for missing values (titles, descriptions, images).
+- Always separate:
+  - **Transport format** (raw API) from
+  - **View model** (normalized object for UI).
+
+### ✅ Helpers
+- Use/extend shared helper patterns:
+  - `formatPrice`, `formatExhibitionPeriod`, `toKey`, `coerceCategory`, etc.
+- Place cross-cutting helpers in `src/lib/*` by domain, not in components.
+
+### ✅ Function Naming
+- Use descriptive, action-oriented names:
+  - `getXxx`, `createXxx`, `updateXxx`, `deleteXxx` for API calls.
+  - `normalizeXxx` for data transformation.
+  - `formatXxx` for display formatting.
+  - `buildXxx` for constructing complex objects.
+
+## 🔹 Components & Hooks
+
+### ✅ Component Props & Behavior
+- Keep components **presentational** where possible; move data fetching and domain logic to:
+  - Server Components (pages/layouts).
+  - Client containers (`*Client.jsx`).
+- Pass normalized data into presentational components instead of raw API responses.
+
+### ✅ Hooks
+- All hooks must:
+  - Start with `use`.
+  - Be pure and side-effectful only in `useEffect` blocks.
+- For auth:
+  - Use `useAuthContext` for reactive auth state.
+  - Use `useDecodedAuth` when you must interpret JWT claims (role/email).
+
+### ✅ Component Structure
+- Order component code:
+  1. Imports (external → internal → relative)
+  2. Constants/helpers
+  3. Component definition
+  4. Hooks (useState, useEffect, etc.)
+  5. Event handlers
+  6. Render logic
+  7. Export
+
+## 🔹 Error Handling & Logging
+
+### ✅ API Errors
+- Log with clear, consistent labels via `request(...)` in `lib/api.js`.
+- Do not log sensitive information (tokens, raw passwords).
+
+### ✅ UI Errors
+- Show user-friendly, Korean messages.
+- Use dedicated UI components (e.g. `ErrorState` component) for repeated patterns.
+
+### ✅ Error Boundaries
+- Use Next.js `error.jsx` for route-level error boundaries.
+- Provide fallback UI that guides users back to working parts of the app.
+
+## 🔹 Code Quality
+
+### ✅ Consistency
+- Follow existing patterns in the codebase.
+- When adding new features, match the style and structure of similar existing features.
+
+### ✅ Comments
+- Use comments to explain **why**, not **what**.
+- Document complex business logic or non-obvious decisions.
+- Keep comments up-to-date with code changes.
+
+### ✅ Imports
+- Group imports logically:
+  1. External libraries (React, Next.js, etc.)
+  2. Internal components
+  3. Internal hooks
+  4. Internal utilities/lib
+  5. Relative imports
+- Use absolute imports with `@/` when possible.

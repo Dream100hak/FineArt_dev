@@ -1,0 +1,122 @@
+# 🔄 API & Data Rules
+
+## 🔹 API Communication
+
+### ✅ Centralized API Access
+- **Supabase Migration**: All database operations **must use Supabase client** from `src/lib/supabase.js`.
+- **Legacy Support**: During migration, old API calls go through `src/lib/api.js` (will be deprecated).
+- Do not call `axios` or Supabase client directly in components.
+- Create wrapper functions following the pattern:
+  - `getXxx(params)` for GET/SELECT requests
+  - `createXxx(payload)` for POST/INSERT requests
+  - `updateXxx(id, payload)` for PUT/UPDATE requests
+  - `deleteXxx(id)` for DELETE requests
+
+### ✅ Supabase Query Pattern
+- Use Supabase query builder:
+  ```javascript
+  const { data, error } = await supabase
+    .from('table_name')
+    .select('*')
+    .eq('column', value);
+  
+  if (error) throw error;
+  return data;
+  ```
+- Always check for errors before using data.
+- See `supabase.mdc` for detailed Supabase patterns.
+
+### ✅ Legacy Request Wrapper Pattern (Deprecated)
+- Old `request(callback, label)` helper will be removed after migration.
+- During migration, maintain compatibility but prefer Supabase patterns.
+
+## 🔹 Pagination & Filtering
+
+### ✅ Pagination
+- Standard query parameters:
+  - `page`, `size` or `pageSize`.
+- Default sizes:
+  - Boards: `size = 20` or `PAGE_SIZE = 12` as in existing code.
+- Always pass params through `sanitizeParams`.
+
+### ✅ Filtering
+- Use consistent parameter names:
+  - `category` for category filters.
+  - `keyword` or `search` for text search.
+  - `sort` for sorting options.
+- Normalize filter values before sending (e.g. `coerceCategory`).
+
+## 🔹 Data Handling
+
+### ✅ Identifiers
+- Normalize IDs to strings before passing to API (`id.toString()`).
+- Validate presence of required identifiers and throw informative `Error` messages from lib functions.
+- Handle both numeric and string IDs gracefully.
+
+### ✅ Data Normalization
+- Always normalize API responses:
+  - Use `normalizeXxx` functions (e.g. `normalizeExhibition`, `normalizeArtworkPreview`).
+  - Handle case variations (`id` vs `Id`, `slug` vs `Slug`).
+  - Provide safe defaults for missing fields.
+
+### ✅ Fallback Data
+- When API calls fail:
+  - Use fallback data from `lib/*Fallbacks.js`.
+  - Show user-friendly error messages (Korean).
+  - Indicate when fallback data is being shown.
+
+## 🔹 File Uploads
+
+### ✅ Supabase Storage (Preferred)
+- Use Supabase Storage for file uploads:
+  ```javascript
+  const { data, error } = await supabase.storage
+    .from('bucket-name')
+    .upload(`path/${fileName}`, file);
+  ```
+- Get public URL:
+  ```javascript
+  const { data: { publicUrl } } = supabase.storage
+    .from('bucket-name')
+    .getPublicUrl('path/fileName.jpg');
+  ```
+- See `supabase.mdc` for detailed storage patterns.
+
+### ✅ Legacy Upload Functions (Deprecated)
+- Old `uploadFile` / `uploadArticleImage` will be replaced with Supabase Storage.
+- During migration, maintain compatibility but migrate to Supabase Storage.
+
+### ✅ Upload Handling
+- Validate file before upload:
+  - Check file exists.
+  - Validate file type if needed.
+  - Check file size if needed.
+- Handle upload errors gracefully:
+  - Show user-friendly error messages.
+  - Allow retry.
+
+## 🔹 Error Handling
+
+### ✅ API Error Handling
+- Wrap API calls in try/catch blocks.
+- Use `Promise.allSettled` for multiple independent API calls.
+- Log errors with context:
+  - Use consistent labels in `request()` calls.
+  - Include relevant parameters in error logs.
+
+### ✅ User-Facing Errors
+- Display Korean error messages.
+- Provide actionable guidance when possible.
+- Use consistent error UI components.
+
+## 🔹 Caching & Revalidation
+
+### ✅ Next.js Revalidation
+- Use `export const revalidate = 0` for dynamic content that needs fresh data.
+- Use `revalidate` with time values for ISR when appropriate.
+- Consider caching strategy per route.
+
+### ✅ Client-Side Caching
+- Avoid unnecessary re-fetches:
+  - Cache API responses when appropriate.
+  - Use React Query or similar if complex caching needed (currently not in use).

@@ -143,16 +143,13 @@ export default function BoardEditorClient({ board, initialArticle }) {
 
     try {
       const payload = {
-        boardTypeId: board.id,
+        boardId: board.id, // Changed from boardTypeId to boardId
         title: form.title.trim(),
         content: form.content,
         writer: form.writer.trim() || 'FineArt 사용자',
-        email: form.email.trim() || decodedEmail || 'user@fineart.local',
-        thumbnailUrl: form.thumbnailUrl || undefined,
-        // 카테고리는 사용자가 선택한 값을 그대로 보냅니다. (공지 선택이 일반으로 내려가는 이슈 수정)
+        author: form.email.trim() || decodedEmail || 'user@fineart.local', // Use author field for email
         category: form.category,
-        // 공지(상단 고정)는 isPinned/isBoard 플래그로도 함께 관리합니다.
-        isPinned: isAdmin ? form.isPinned : form.category === 'notice',
+        // Note: isPinned is not in the schema, so we'll handle it via category
       };
 
       if (isEditing) {

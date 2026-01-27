@@ -1,0 +1,345 @@
+---
+alwaysApply: true
+---
+
+# 🔄 Supabase Migration Guide
+
+## 🎯 Migration Overview
+
+This project is migrating from **Next.js + C# .NET + MySQL** to **Next.js + Supabase** architecture.
+
+### Migration Goals
+- Replace C# .NET backend with Supabase backend services
+- Migrate MySQL database to Supabase PostgreSQL
+- Replace custom JWT auth with Supabase Auth
+- Replace custom file upload API with Supabase Storage
+- Maintain existing frontend functionality and user experience
+
+## 📋 Migration Checklist
+
+### Phase 1: Setup & Configuration
+- [ ] Install Supabase client libraries (`@supabase/supabase-js`)
+- [ ] Create Supabase project and get credentials
+- [ ] Set up environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- [ ] Create Supabase client utility (`src/lib/supabase.js`)
+- [ ] Set up Supabase database schema (migrate from MySQL)
+
+### Phase 2: Authentication Migration
+- [ ] Replace custom JWT auth with Supabase Auth
+- [ ] Update `src/lib/auth.js` to use Supabase Auth
+- [ ] Update `src/hooks/useAuthContext.js` for Supabase session
+- [ ] Update login page (`src/app/login/page.jsx`)
+- [ ] Update register page (`src/app/register/page.jsx`)
+- [ ] Migrate user roles to Supabase user metadata or separate `profiles` table
+- [ ] Update admin access checks to use Supabase roles
+
+### Phase 3: Database Migration
+- [ ] Design Supabase schema (tables: `artists`, `artworks`, `exhibitions`, `boards`, `articles`, `profiles`)
+- [ ] Create migration scripts or use Supabase SQL editor
+- [ ] Set up Row Level Security (RLS) policies
+- [ ] Migrate existing data from MySQL to Supabase
+- [ ] Update API functions in `src/lib/api.js` to use Supabase client
+
+### Phase 4: API Layer Refactoring
+- [ ] Replace `axios` calls with Supabase client calls
+- [ ] Update all GET operations (`getArticles`, `getArtists`, etc.)
+- [ ] Update all CREATE operations (`createArticle`, `createArtist`, etc.)
+- [ ] Update all UPDATE operations (`updateArticle`, `updateArtist`, etc.)
+- [ ] Update all DELETE operations (`deleteArticle`, `deleteArtist`, etc.)
+- [ ] Handle pagination with Supabase `.range()` or `.limit()`
+- [ ] Implement filtering and sorting with Supabase query builders
+
+### Phase 5: File Storage Migration
+- [ ] Set up Supabase Storage buckets (`artworks`, `exhibitions`, `articles`, `avatars`)
+- [ ] Replace `/api/uploads` with Supabase Storage
+- [ ] Update `uploadFile` and `uploadArticleImage` functions
+- [ ] Migrate existing files to Supabase Storage
+- [ ] Update image URLs in database
+
+### Phase 6: Testing & Cleanup
+- [ ] Test all CRUD operations
+- [ ] Test authentication flows
+- [ ] Test file uploads
+- [ ] Test admin access controls
+- [ ] Remove old API endpoint references
+- [ ] Remove `axios` dependency if no longer needed
+- [ ] Update error handling for Supabase errors
+- [ ] Update fallback data handling
+
+## 🏗 Supabase Architecture Rules
+
+### ✅ Supabase Client Setup
+- Create a single Supabase client instance in `src/lib/supabase.js`
+- Use separate clients for client-side and server-side:
+  ```javascript
+  // Client-side (browser)
+  import { createBrowserClient } from '@supabase/ssr'
+  
+  // Server-side (Server Components, API routes)
+  import { createServerClient } from '@supabase/ssr'
+  ```
+- Never expose service role key in client-side code
+- Use environment variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+### ✅ Database Schema Design
+- Follow Supabase naming conventions:
+  - Table names: `snake_case` (e.g. `artists`, `artworks`, `exhibitions`)
+  - Column names: `snake_case` (e.g. `created_at`, `image_url`)
+  - Primary keys: `id` (UUID or integer)
+  - Foreign keys: `{table}_id` (e.g. `artist_id`, `board_id`)
+- Add standard columns:
+  - `id` (primary key)
+  - `created_at` (timestamp)
+  - `updated_at` (timestamp)
+  - `user_id` (for user-created content, references `auth.users`)
+
+### ✅ Row Level Security (RLS)
+- **Enable RLS on all tables** by default
+- Create policies for:
+  - **Public read access**: Allow SELECT for public content (artists, artworks, exhibitions, boards)
+  - **Authenticated write**: Allow INSERT/UPDATE/DELETE for authenticated users
+  - **Admin only**: Restrict admin operations to users with `admin` role
+- Use Supabase functions or user metadata for role checks:
+  ```sql
+  -- Example: Admin-only policy
+  CREATE POLICY "Admin only" ON artists
+    FOR ALL USING (
+      auth.jwt() ->> 'role' = 'admin'
+    );
+  ```
+
+### ✅ Authentication Patterns
+- Use Supabase Auth methods:
+  - `supabase.auth.signUp()` for registration
+  - `supabase.auth.signInWithPassword()` for login
+  - `supabase.auth.signOut()` for logout
+  - `supabase.auth.getSession()` for session check
+  - `supabase.auth.onAuthStateChange()` for auth state changes
+- Store user role in:
+  - Option 1: `user.user_metadata.role` (simple, for small apps)
+  - Option 2: Separate `profiles` table with `role` column (recommended for production)
+- Update `useAuthContext` to subscribe to Supabase auth state changes
+
+### ✅ API Function Patterns
+- Replace axios calls with Supabase queries:
+  ```javascript
+  // OLD (axios)
+  export const getArtists = () => 
+    request(() => api.get('/api/artists'), 'GET /api/artists');
+  
+  // NEW (Supabase)
+  export const getArtists = async () => {
+    const { data, error } = await supabase
+      .from('artists')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  };
+  ```
+- Handle Supabase errors consistently:
+  ```javascript
+  if (error) {
+    console.error('[Supabase] Operation failed:', error);
+    throw new Error(error.message || 'Operation failed');
+  }
+  ```
+
+### ✅ Pagination with Supabase
+- Use `.range()` for offset pagination:
+  ```javascript
+  const page = 1;
+  const pageSize = 12;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  
+  const { data, error, count } = await supabase
+    .from('artworks')
+    .select('*', { count: 'exact' })
+    .range(from, to);
+  ```
+- Or use cursor-based pagination with `.gt()` or `.lt()` for better performance
+
+### ✅ Filtering & Sorting
+- Use Supabase query builder methods:
+  ```javascript
+  // Filtering
+  .eq('status', 'ForSale')
+  .neq('category', 'Other')
+  .like('title', '%keyword%')
+  .in('category', ['Solo', 'Group'])
+  
+  // Sorting
+  .order('created_at', { ascending: false })
+  .order('name', { ascending: true })
+  ```
+
+### ✅ File Uploads with Supabase Storage
+- Use Supabase Storage API:
+  ```javascript
+  // Upload file
+  const { data, error } = await supabase.storage
+    .from('artworks')
+    .upload(`${userId}/${fileName}`, file);
+  
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('artworks')
+    .getPublicUrl(data.path);
+  ```
+- Set up storage policies:
+  - Public read for images
+  - Authenticated write for uploads
+  - Admin delete for management
+
+### ✅ Data Normalization
+- Keep existing normalization functions (`normalizeXxx`)
+- Adapt to Supabase response format:
+  - Supabase returns arrays directly (no `items` wrapper)
+  - Field names are `snake_case` (convert to `camelCase` if needed)
+  - Handle `null` values consistently
+
+### ✅ Error Handling
+- Supabase errors have structure:
+  ```javascript
+  {
+    message: string,
+    details: string,
+    hint: string,
+    code: string
+  }
+  ```
+- Map Supabase error codes to user-friendly messages
+- Keep fallback data patterns for resilience
+
+## 🔄 Migration Strategy
+
+### Incremental Migration Approach
+1. **Parallel Run**: Keep both old API and Supabase running during migration
+2. **Feature Flags**: Use environment variables to switch between old/new API
+3. **Gradual Cutover**: Migrate one feature at a time (auth → artists → artworks → etc.)
+4. **Rollback Plan**: Keep old API endpoints until migration is verified
+
+### Data Migration Steps
+1. Export data from MySQL (CSV or SQL dump)
+2. Transform data format (camelCase → snake_case, date formats)
+3. Import to Supabase using:
+   - Supabase Dashboard SQL editor
+   - Supabase CLI migrations
+   - Custom migration scripts
+4. Verify data integrity
+5. Update foreign key relationships
+
+### Testing Strategy
+- Test each migrated feature independently
+- Test authentication flows end-to-end
+- Test CRUD operations for each entity
+- Test file uploads and image display
+- Test admin access controls
+- Test pagination and filtering
+- Test error scenarios
+
+## 📝 Code Examples
+
+### Supabase Client Setup
+```javascript
+// src/lib/supabase.js
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+```
+
+### Authentication Hook Update
+```javascript
+// src/hooks/useAuthContext.js
+import { createClient } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+
+export default function useAuthContext() {
+  const [session, setSession] = useState(null)
+  const supabase = createClient()
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+      }
+    )
+    
+    return () => subscription.unsubscribe()
+  }, [])
+  
+  return {
+    isAuthenticated: !!session,
+    user: session?.user,
+    role: session?.user?.user_metadata?.role,
+  }
+}
+```
+
+### API Function Migration Example
+```javascript
+// src/lib/api.js (Supabase version)
+import { createClient } from './supabase'
+
+const supabase = createClient()
+
+export const getArtists = async () => {
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .order('created_at', { ascending: false })
+  
+  if (error) {
+    console.error('[API] getArtists failed:', error)
+    throw error
+  }
+  
+  return data
+}
+
+export const createArtist = async (payload) => {
+  const { data, error } = await supabase
+    .from('artists')
+    .insert(payload)
+    .select()
+    .single()
+  
+  if (error) {
+    console.error('[API] createArtist failed:', error)
+    throw error
+  }
+  
+  return data
+}
+```
+
+## ⚠️ Common Pitfalls
+
+1. **RLS Policies**: Don't forget to enable and configure RLS policies
+2. **CORS**: Configure CORS settings in Supabase Dashboard if needed
+3. **Rate Limiting**: Be aware of Supabase rate limits
+4. **Data Types**: Ensure MySQL data types map correctly to PostgreSQL
+5. **Case Sensitivity**: PostgreSQL is case-sensitive; use quotes for mixed case
+6. **UUID vs Integer**: Decide on ID strategy (UUID recommended for distributed systems)
+7. **Relationships**: Set up foreign keys and relationships properly
+8. **Indexes**: Add indexes for frequently queried columns
+
+## 🚀 Post-Migration
+
+- Remove old API endpoint references
+- Remove `axios` dependency
+- Update documentation
+- Monitor Supabase usage and costs
+- Set up Supabase backups
+- Configure Supabase monitoring/alerts

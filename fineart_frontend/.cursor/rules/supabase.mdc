@@ -1,0 +1,319 @@
+---
+alwaysApply: true
+---
+
+# 🔷 Supabase Integration Rules
+
+## 🔹 Supabase Client Usage
+
+### ✅ Client Initialization
+- Always use `createClient()` from `src/lib/supabase.js`
+- Never create Supabase clients directly in components
+- Use separate client instances for client-side and server-side when needed
+- Access Supabase client via: `import { createClient } from '@/lib/supabase'`
+
+### ✅ Environment Variables
+- Required variables:
+  - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
+- Never commit `.env.local` with actual keys
+- Use different projects for development and production
+
+## 🔹 Database Queries
+
+### ✅ Query Patterns
+- Use Supabase query builder methods:
+  ```javascript
+  const { data, error } = await supabase
+    .from('table_name')
+    .select('*')
+    .eq('column', 'value')
+    .order('created_at', { ascending: false })
+  ```
+- Always check for errors:
+  ```javascript
+  if (error) {
+    console.error('[Supabase] Query failed:', error);
+    throw error;
+  }
+  ```
+
+### ✅ Select Queries
+- Use `.select()` to specify columns:
+  - `.select('*')` for all columns
+  - `.select('id, name, email')` for specific columns
+  - `.select('*, profiles(*)')` for joins
+- Prefer selecting only needed columns for performance
+
+### ✅ Filtering
+- Use filter methods:
+  - `.eq('column', value)` - equals
+  - `.neq('column', value)` - not equals
+  - `.gt('column', value)` - greater than
+  - `.lt('column', value)` - less than
+  - `.like('column', '%pattern%')` - pattern matching
+  - `.in('column', [value1, value2])` - in array
+  - `.is('column', null)` - is null
+- Chain multiple filters as needed
+
+### ✅ Sorting
+- Use `.order()`:
+  ```javascript
+  .order('created_at', { ascending: false })
+  .order('name', { ascending: true })
+  ```
+- Multiple `.order()` calls for multi-column sorting
+
+### ✅ Pagination
+- Use `.range(from, to)` for offset pagination:
+  ```javascript
+  const page = 1;
+  const pageSize = 12;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  
+  const { data, error, count } = await supabase
+    .from('table')
+    .select('*', { count: 'exact' })
+    .range(from, to);
+  ```
+- Get total count with `{ count: 'exact' }` option
+
+### ✅ Single Record Queries
+- Use `.single()` when expecting one result:
+  ```javascript
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .eq('id', id)
+    .single();
+  ```
+- Handle errors when record not found
+
+## 🔹 CRUD Operations
+
+### ✅ Create (INSERT)
+- Use `.insert()`:
+  ```javascript
+  const { data, error } = await supabase
+    .from('artists')
+    .insert({ name: 'Artist Name', ... })
+    .select()
+    .single();
+  ```
+- Always use `.select()` after insert to get created record
+- Use `.single()` if inserting one record
+
+### ✅ Update
+- Use `.update()` with `.eq()`:
+  ```javascript
+  const { data, error } = await supabase
+    .from('artists')
+    .update({ name: 'New Name' })
+    .eq('id', id)
+    .select()
+    .single();
+  ```
+- Always specify `.eq()` condition to avoid updating all records
+- Use `.select()` to get updated record
+
+### ✅ Delete
+- Use `.delete()` with `.eq()`:
+  ```javascript
+  const { data, error } = await supabase
+    .from('artists')
+    .delete()
+    .eq('id', id);
+  ```
+- Always specify `.eq()` condition to avoid deleting all records
+- Consider soft deletes (add `deleted_at` column) instead of hard deletes
+
+### ✅ Upsert
+- Use `.upsert()` for insert or update:
+  ```javascript
+  const { data, error } = await supabase
+    .from('artists')
+    .upsert({ id: id, name: 'Name', ... }, { onConflict: 'id' })
+    .select();
+  ```
+
+## 🔹 Authentication
+
+### ✅ Sign Up
+- Use `supabase.auth.signUp()`:
+  ```javascript
+  const { data, error } = await supabase.auth.signUp({
+    email: 'user@example.com',
+    password: 'password',
+    options: {
+      data: {
+        role: 'user' // user metadata
+      }
+    }
+  });
+  ```
+
+### ✅ Sign In
+- Use `supabase.auth.signInWithPassword()`:
+  ```javascript
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: 'user@example.com',
+    password: 'password'
+  });
+  ```
+
+### ✅ Sign Out
+- Use `supabase.auth.signOut()`:
+  ```javascript
+  const { error } = await supabase.auth.signOut();
+  ```
+
+### ✅ Session Management
+- Get current session:
+  ```javascript
+  const { data: { session } } = await supabase.auth.getSession();
+  ```
+- Subscribe to auth state changes:
+  ```javascript
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (event, session) => {
+      // Handle auth state change
+    }
+  );
+  // Unsubscribe: subscription.unsubscribe()
+  ```
+
+### ✅ User Metadata
+- Access user metadata:
+  ```javascript
+  const role = session?.user?.user_metadata?.role;
+  ```
+- Update user metadata via Supabase Dashboard or Admin API
+
+## 🔹 File Storage
+
+### ✅ Upload Files
+- Use Supabase Storage:
+  ```javascript
+  const { data, error } = await supabase.storage
+    .from('bucket-name')
+    .upload(`path/${fileName}`, file);
+  ```
+- Handle file size limits
+- Validate file types before upload
+
+### ✅ Get Public URL
+- Get public URL for uploaded file:
+  ```javascript
+  const { data: { publicUrl } } = supabase.storage
+    .from('bucket-name')
+    .getPublicUrl('path/fileName.jpg');
+  ```
+
+### ✅ Delete Files
+- Delete file from storage:
+  ```javascript
+  const { error } = await supabase.storage
+    .from('bucket-name')
+    .remove(['path/fileName.jpg']);
+  ```
+
+### ✅ Storage Buckets
+- Organize files in buckets:
+  - `artworks` - artwork images
+  - `exhibitions` - exhibition images
+  - `articles` - article images
+  - `avatars` - user avatars
+- Set bucket policies for public/private access
+
+## 🔹 Error Handling
+
+### ✅ Supabase Errors
+- Supabase errors have structure:
+  ```javascript
+  {
+    message: string,
+    details: string,
+    hint: string,
+    code: string
+  }
+  ```
+- Always check `error` before using `data`
+- Log errors with context:
+  ```javascript
+  if (error) {
+    console.error('[Supabase] Operation failed:', {
+      message: error.message,
+      code: error.code,
+      details: error.details
+    });
+    throw error;
+  }
+  ```
+
+### ✅ User-Friendly Errors
+- Map Supabase error codes to Korean messages:
+  ```javascript
+  const getErrorMessage = (error) => {
+    switch (error.code) {
+      case 'PGRST116': return '요청한 데이터를 찾을 수 없습니다.';
+      case '23505': return '이미 존재하는 데이터입니다.';
+      default: return error.message || '오류가 발생했습니다.';
+    }
+  };
+  ```
+
+## 🔹 Row Level Security (RLS)
+
+### ✅ RLS Policies
+- Always enable RLS on tables
+- Create policies for:
+  - Public SELECT (read-only access)
+  - Authenticated INSERT/UPDATE/DELETE
+  - Admin-only operations
+- Test policies thoroughly
+
+### ✅ Policy Examples
+```sql
+-- Public read access
+CREATE POLICY "Public read access" ON artists
+  FOR SELECT USING (true);
+
+-- Authenticated write access
+CREATE POLICY "Authenticated write" ON artists
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Admin only
+CREATE POLICY "Admin only" ON artists
+  FOR ALL USING (
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+  );
+```
+
+## 🔹 Best Practices
+
+### ✅ Performance
+- Select only needed columns
+- Use indexes on frequently queried columns
+- Implement pagination for large datasets
+- Use `.limit()` to restrict results
+- Cache frequently accessed data when appropriate
+
+### ✅ Security
+- Never expose service role key in client code
+- Use RLS policies for data access control
+- Validate user input before database operations
+- Sanitize file uploads (type, size)
+- Use parameterized queries (Supabase handles this)
+
+### ✅ Data Consistency
+- Use transactions for multi-step operations when needed
+- Handle foreign key constraints properly
+- Use database constraints (unique, not null, etc.)
+- Validate data before insert/update
+
+### ✅ Code Organization
+- Keep Supabase queries in `src/lib/api.js` or domain-specific files
+- Don't mix Supabase queries with component logic
+- Create reusable query functions
+- Use TypeScript types when possible for type safety

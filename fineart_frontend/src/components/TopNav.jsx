@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createClient } from '@/lib/supabase';
 import {
   FiChevronDown,
   FiFeather,
@@ -33,8 +34,51 @@ const formatGreeting = (email) => {
 export default function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, decodedEmail, decodedRole } = useDecodedAuth();
+  const auth = useDecodedAuth();
+  const { isAuthenticated, decodedEmail, decodedRole } = auth;
   const isAdmin = decodedRole === 'admin';
+  
+  // Force re-render when auth state changes
+  const [, forceUpdate] = useState({});
+  
+  useEffect(() => {
+    // Listen for auth changes and force update
+    const handler = () => {
+      console.log('[TopNav] Auth change event received, forcing update');
+      forceUpdate({});
+    };
+    
+    window.addEventListener('fineart:auth-changed', handler);
+    
+    // Also check session on mount
+    const checkSession = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('[TopNav] Session found on mount:', session.user.email);
+          handler();
+        }
+      } catch (error) {
+        console.error('[TopNav] Session check error:', error);
+      }
+    };
+    
+    checkSession();
+    
+    return () => {
+      window.removeEventListener('fineart:auth-changed', handler);
+    };
+  }, []);
+  
+  // Debug log
+  useEffect(() => {
+    console.log('[TopNav] Render with auth state:', {
+      isAuthenticated,
+      email: decodedEmail,
+      role: decodedRole,
+    });
+  }, [isAuthenticated, decodedEmail, decodedRole]);
 
   const [isBoardsOpen, setIsBoardsOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -97,10 +141,18 @@ export default function TopNav() {
       [nodeId]: !prev[nodeId],
     }));
 
-  const handleLogout = () => {
-    clearAuthSession();
+  const handleLogout = async () => {
     setIsMobileOpen(false);
-    router.push('/');
+    
+    try {
+      await clearAuthSession();
+      // Immediately redirect
+      window.location.href = '/';
+    } catch (error) {
+      console.error('[TopNav] Logout error:', error);
+      // Still redirect even on error
+      window.location.href = '/';
+    }
   };
 
   const renderAuthActions = (variant = 'desktop') => {

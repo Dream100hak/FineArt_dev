@@ -1,0 +1,77 @@
+---
+alwaysApply: true
+---
+
+# 🎨 Styling Rules
+
+## 🔹 Tailwind & Global Styles
+
+### ✅ Primary styling with Tailwind CSS
+- Use Tailwind utility classes for spacing, layout, color, etc.
+- Rely on design tokens defined in `globals.css`:
+  - `--background`, `--foreground`, `--primary`, `--secondary`.
+- Use `bg-body`, `text-neutral-*`, `bg-[#f8f4e8]` etc. consistently with existing design.
+
+### ✅ Theme & Tokens
+- Use the `@theme inline` config from `globals.css`:
+  - `--color-body`, `--color-foreground`, `--color-primary`
+  - `--font-sans`, `--font-mono`
+  - `--breakpoint-sm/md/lg`
+- Prefer semantic classes over raw hex when possible (e.g. `bg-body` instead of repeating the hex).
+
+### ✅ Global Layout Helpers
+- Use shared utility classes:
+  - `.screen-padding` for horizontal page padding.
+  - `.section` for vertical section spacing.
+- Use `min-h-screen` and flex layout patterns as in `RootLayout` and `TopNav`.
+
+## 🔹 Typography & Layout
+
+### ✅ Fonts
+- Use Geist for base fonts (configured in `app/layout.jsx`).
+- Use Korean web-safe fonts fallback as in `globals.css` when necessary (`Pretendard`, `Noto Sans KR`).
+
+### ✅ Headings & Text
+- Use Tailwind text utilities:
+  - Headlines: `text-3xl/4xl font-semibold`.
+  - Section labels: small, uppercase, tracking:  
+    `text-xs uppercase tracking-[0.3em] text-neutral-500`.
+- Maintain consistent section headings styling (e.g. home page & admin page patterns).
+
+### ✅ Card & Panel Design
+- Use rounded corners and subtle borders:
+  - `rounded-[28px]` or `rounded-3xl`.
+  - `border border-neutral-100/200` + `bg-white` + `shadow-sm/ shadow-xl`.
+- Hover behavior:
+  - Slight translate: `hover:-translate-y-1`
+  - Shadow change: `hover:shadow-lg/hover:shadow-xl`.
+
+## 🔹 Images & Media
+
+### ✅ Images
+- Always set:
+  - `className="h-full w-full object-cover"`.
+  - `loading="lazy"` for non-critical images.
+- Use default/fallback image URLs defined in libs (e.g. `DEFAULT_ARTWORK_IMAGE`, `DEFAULT_IMAGE` in `exhibitions.js`) when API does not provide one.
+
+### ✅ Rich Text Editor
+- Use `RichTextEditor` component with React Quill:
+  - `value` as HTML string.
+  - `onChange` must receive normalized HTML (empty string for `<p><br></p>`).
+  - `onUploadImage` should return a URL to insert.
+- Rely on built-in image resize + align logic; do not reimplement within consumers.
+
+## 🔹 Responsive Design
+
+### ✅ Breakpoints
+- Use Tailwind breakpoints consistently:
+  - `sm:` → 640px
+  - `md:` → 768px
+  - `lg:` → 1024px
+- Mobile-first approach: design for mobile, then enhance for larger screens.
+
+### ✅ Layout Patterns
+- Use flexbox/grid utilities:
+  - `flex`, `grid`, `grid-cols-*` for layouts.
+  - `gap-*` for spacing between items.
+  - `mx-auto max-w-*` for centered content containers.

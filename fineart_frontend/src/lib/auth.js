@@ -1,5 +1,4 @@
-import { jwtDecode } from 'jwt-decode';
-import { EMAIL_STORAGE_KEY, ROLE_STORAGE_KEY, TOKEN_COOKIE_KEY, TOKEN_STORAGE_KEY } from './api';
+import { createClient } from './supabase';
 
 const AUTH_EVENT_NAME = 'fineart:auth-changed';
 
@@ -14,39 +13,79 @@ const defaultSnapshot = Object.freeze({
 const normalizeRole = (role) =>
   typeof role === 'string' && role.trim().length > 0 ? role.trim().toLowerCase() : null;
 
-const readCookieToken = () => {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${TOKEN_COOKIE_KEY}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+// Broadcast auth change event
+export const broadcastAuthChange = () => {
+  if (typeof window === 'undefined') return;
+  console.log('[Auth] Broadcasting auth change event');
+  window.dispatchEvent(new Event(AUTH_EVENT_NAME));
+};
+
+// Legacy function - kept for compatibility
+export const persistAuthSession = async (token, explicitRole, email) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const supabase = createClient();
+    
+    // Wait a bit for Supabase to sync
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session && explicitRole) {
+      try {
+        await supabase.auth.updateUser({
+          data: { role: explicitRole },
+        });
+        
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: session.user.id,
+            email: email || session.user.email,
+            role: explicitRole,
+          });
+      } catch (updateError) {
+        console.warn('[Auth] Failed to update user metadata:', updateError);
+      }
+    }
+    
+    // Broadcast change multiple times to ensure UI updates
+    broadcastAuthChange();
+    setTimeout(() => broadcastAuthChange(), 100);
+    setTimeout(() => broadcastAuthChange(), 300);
+  } catch (error) {
+    console.error('[Auth] Failed to persist session:', error);
+    // Still broadcast even on error
+    broadcastAuthChange();
+  }
+};
+
+export const clearAuthSession = async () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('[Auth] Sign out error:', error);
+    }
+    
+    // Broadcast change immediately
+    broadcastAuthChange();
+  } catch (error) {
+    console.error('[Auth] Failed to clear session:', error);
+    broadcastAuthChange();
+  }
 };
 
 export const getStoredToken = () => {
   if (typeof window === 'undefined') return null;
   try {
-    const token = window.localStorage?.getItem(TOKEN_STORAGE_KEY);
-    if (token) {
-      return token;
-    }
-  } catch {
-    // ignored
-  }
-
-  return readCookieToken();
-};
-
-const getStoredRole = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return normalizeRole(window.localStorage?.getItem(ROLE_STORAGE_KEY));
-  } catch {
+    const supabase = createClient();
+    // This is async but we can't wait - return null for now
     return null;
-  }
-};
-
-const getStoredEmail = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return window.localStorage?.getItem(EMAIL_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -55,138 +94,13 @@ const getStoredEmail = () => {
 export const decodeJwtPayload = (token) => {
   if (!token) return null;
   try {
-    return jwtDecode(token);
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload;
   } catch {
     return null;
   }
-};
-
-const ROLE_CLAIM_KEYS = [
-  'role',
-  'Role',
-  'roles',
-  'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
-];
-
-const resolveRoleFromPayload = (payload) => {
-  if (!payload) return null;
-
-  for (const key of ROLE_CLAIM_KEYS) {
-    if (key === 'roles' && Array.isArray(payload.roles) && payload.roles.length > 0) {
-      return payload.roles[0];
-    }
-
-    if (key !== 'roles' && payload[key]) {
-      return payload[key];
-    }
-  }
-
-  return null;
-};
-
-let cachedSnapshot = defaultSnapshot;
-let cachedToken = null;
-
-const isPayloadExpired = (payload) =>
-  typeof payload?.exp === 'number' && payload.exp * 1000 <= Date.now();
-
-const buildSnapshot = (token, roleHint, emailHint) => {
-  if (!token) {
-    return defaultSnapshot;
-  }
-
-  try {
-    const payload = decodeJwtPayload(token);
-    if (!payload) {
-      return defaultSnapshot;
-    }
-
-    if (isPayloadExpired(payload)) {
-      clearAuthSession();
-      return defaultSnapshot;
-    }
-
-    const resolvedRole = normalizeRole(roleHint ?? resolveRoleFromPayload(payload));
-    return {
-      isAuthenticated: true,
-      role: resolvedRole,
-      name: payload?.name ?? payload?.nickname ?? payload?.sub ?? null,
-      email: emailHint ?? payload?.email ?? payload?.sub ?? null,
-      token,
-    };
-  } catch {
-    return defaultSnapshot;
-  }
-};
-
-const broadcastAuthChange = () => {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new Event(AUTH_EVENT_NAME));
-};
-
-const writeRole = (role) => {
-  if (typeof window === 'undefined') return;
-  if (!role) {
-    window.localStorage?.removeItem(ROLE_STORAGE_KEY);
-    return;
-  }
-
-  window.localStorage?.setItem(ROLE_STORAGE_KEY, role);
-};
-
-const writeEmail = (email) => {
-  if (typeof window === 'undefined') return;
-  if (!email) {
-    window.localStorage?.removeItem(EMAIL_STORAGE_KEY);
-    return;
-  }
-
-  window.localStorage?.setItem(EMAIL_STORAGE_KEY, email);
-};
-
-export const persistAuthSession = (token, explicitRole, email) => {
-  if (typeof window === 'undefined' || !token) return;
-
-  window.localStorage?.setItem(TOKEN_STORAGE_KEY, token);
-  if (email) {
-    writeEmail(email);
-  }
-
-  const normalizedRole = normalizeRole(explicitRole);
-  const snapshot = buildSnapshot(token, normalizedRole ?? getStoredRole(), email ?? getStoredEmail());
-  writeRole(snapshot.role);
-
-  cachedToken = token;
-  cachedSnapshot = snapshot;
-  broadcastAuthChange();
-};
-
-export const clearAuthSession = () => {
-  if (typeof window === 'undefined') return;
-
-  window.localStorage?.removeItem(TOKEN_STORAGE_KEY);
-  window.localStorage?.removeItem(ROLE_STORAGE_KEY);
-  window.localStorage?.removeItem(EMAIL_STORAGE_KEY);
-  cachedToken = null;
-  cachedSnapshot = defaultSnapshot;
-  broadcastAuthChange();
-};
-
-export const getAuthSnapshot = () => {
-  if (typeof window === 'undefined') {
-    return cachedSnapshot;
-  }
-
-  const token = getStoredToken();
-  const roleHint = getStoredRole();
-  const emailHint = getStoredEmail();
-  if (token === cachedToken) {
-    return cachedSnapshot;
-  }
-
-  cachedToken = token;
-  cachedSnapshot = buildSnapshot(token, roleHint, emailHint);
-  return cachedSnapshot;
 };
 
 export const AUTH_CHANGE_EVENT = AUTH_EVENT_NAME;

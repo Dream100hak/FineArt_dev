@@ -1,0 +1,88 @@
+---
+alwaysApply: true
+---
+
+# 🧰 Tooling & Quality
+
+## 🔹 Linting & Code Quality
+
+### ✅ ESLint
+- Run ESLint via `npm run lint` before committing.
+- Follow `eslint-config-next/core-web-vitals` rules.
+- Avoid disabling rules without a strong reason.
+- Fix linting errors before committing.
+
+### ✅ Code Formatting
+- Use consistent formatting:
+  - Follow existing code style.
+  - Use 2 spaces for indentation.
+  - Use single quotes for strings (when consistent with existing code).
+
+## 🔹 TypeScript & Type Safety
+
+### ✅ TypeScript Readiness
+- Although current code is JS/JSX, any new TypeScript should:
+  - Respect `jsconfig` path aliases.
+  - Keep `next-env.d.ts` ignored by `.gitignore` as configured.
+- Consider migrating to TypeScript for new features if beneficial.
+
+### ✅ Type Safety Patterns
+- Use JSDoc comments for complex types when helpful.
+- Validate data shapes at API boundaries.
+- Use TypeScript-style type checking patterns in JavaScript.
+
+## 🔹 Git & Version Control
+
+### ✅ Git Workflow
+- Never commit:
+  - `.env*` files (already in `.gitignore`).
+  - Build outputs (`.next/`, `out/`, `build/`).
+  - Dependencies (`node_modules/`).
+  - IDE-specific files (unless team-wide).
+
+### ✅ Commit Messages
+- Write clear, descriptive commit messages.
+- Use present tense: "Add feature" not "Added feature".
+- Reference issues/PRs when applicable.
+
+### ✅ Environment Files
+- Use `.env.local` for local development.
+- Document required environment variables in README if needed.
+- Never commit actual secrets or API keys.
+
+## 🔹 Development Tools
+
+### ✅ Development Server
+- Use `npm run dev` for local development.
+- Ensure API backend is running (default: `http://localhost:5000`).
+- Use browser dev tools for debugging.
+
+### ✅ Build & Production
+- Test production build locally: `npm run build && npm start`.
+- Verify all routes work correctly.
+- Check for console errors and warnings.
+
+## 🔹 Performance
+
+### ✅ Optimization
+- Use Next.js built-in optimizations:
+  - Image optimization with `next/image` when appropriate.
+  - Code splitting via dynamic imports.
+  - Server Components for reduced bundle size.
+
+### ✅ Monitoring
+- Monitor bundle size:
+  - Check build output for large dependencies.
+  - Use dynamic imports for heavy libraries (e.g. Quill in RichTextEditor).
+
+## 🔹 Testing (Future)
+
+### ✅ Testing Strategy
+- When adding tests:
+  - Test user-facing functionality.
+  - Test critical business logic.
+  - Mock API calls appropriately.
+- Consider adding:
+  - Unit tests for utilities.
+  - Integration tests for critical flows.
+  - E2E tests for key user journeys.
