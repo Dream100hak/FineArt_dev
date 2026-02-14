@@ -66,19 +66,19 @@ export default async function BoardArticleDetailPage({ params }) {
   const html = isHtmlContent(content);
 
   return (
-    <div className="bg-[#f7f4d7]/60">
-      <div className="screen-padding section mx-auto w-full max-w-7xl py-10">
+    <div className="min-h-screen bg-[var(--board-bg)]">
+      <div className="screen-padding mx-auto w-full max-w-screen-2xl py-6">
         <div className="flex gap-6 lg:gap-10">
           <BoardSidebar activeSlug={board?.slug ?? slug} />
           <div className="flex min-w-0 flex-1 flex-col gap-6 max-w-3xl">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 href={`/boards/${board?.slug ?? slug ?? ''}`}
-                className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-4 py-2 transition hover:border-neutral-900 hover:text-neutral-900"
               >
                 목록으로
               </Link>
-              <div className="text-xs text-neutral-500">
+              <div className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>
                 {article.isFallback && (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">
                     임시 데이터
@@ -87,13 +87,16 @@ export default async function BoardArticleDetailPage({ params }) {
               </div>
             </div>
 
-            <article className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
-              <div className="space-y-3 border-b border-neutral-100 pb-5">
-                <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">
+            <article
+              className="space-y-6 rounded-3xl border p-8 shadow-sm bg-[var(--board-bg)]"
+              style={{ borderColor: 'var(--board-border)' }}
+            >
+              <div className="space-y-3 border-b pb-5" style={{ borderColor: 'var(--board-border)' }}>
+                <p className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--board-text-secondary)' }}>
                   {article.category || '카테고리'}
                 </p>
-                <h1 className="text-3xl font-semibold text-neutral-900">{article.title}</h1>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
+                <h1 className="text-3xl font-semibold" style={{ color: 'var(--board-text)' }}>{article.title}</h1>
+                <div className="flex flex-wrap items-center gap-3 text-sm" style={{ color: 'var(--board-text-secondary)' }}>
                   <span>{article.writer ?? article.author ?? 'FineArt'}</span>
                   <span>·</span>
                   <span>{formatDate(article.createdAt)}</span>
@@ -102,7 +105,7 @@ export default async function BoardArticleDetailPage({ params }) {
                 </div>
               </div>
 
-              <div className="prose prose-neutral max-w-none text-base leading-relaxed text-neutral-800">
+              <div className="prose prose-neutral max-w-none text-base leading-relaxed" style={{ color: 'var(--board-text)' }}>
                 {html ? (
                   <div dangerouslySetInnerHTML={{ __html: content }} />
                 ) : (
@@ -113,9 +116,9 @@ export default async function BoardArticleDetailPage({ params }) {
                 )}
               </div>
 
-              <div className="flex items-center justify-between border-t border-neutral-100 pt-4 text-sm text-neutral-500">
+              <div className="flex items-center justify-between border-t pt-4 text-sm" style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}>
                 <p>
-                  게시판 · <span className="font-semibold">{board?.name ?? slug}</span>
+                  게시판 · <span className="font-semibold" style={{ color: 'var(--board-text)' }}>{board?.name ?? slug}</span>
                 </p>
                 <BoardDetailActions
                   boardSlug={board?.slug ?? slug}

@@ -33,7 +33,7 @@ const normalizeLayoutType = (value) => {
 
 const LAYOUT_LABELS = {
   table: '리스트형',
-  card: '갤러리형',
+  card: '갤러리형', // 레거시 표시용
   list: '리스트형',
   gallery: '갤러리형',
   media: '미디어형',
@@ -213,11 +213,11 @@ export default function BoardsDirectoryClient({ initialData }) {
 
   return (
     <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
-      <header className="space-y-3 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <header className="space-y-3 rounded-3xl border p-6 shadow-sm bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">FineArt Board</p>
-            <h1 className="text-4xl font-semibold text-neutral-900">게시판 아카이브</h1>
+            <p className="text-xs uppercase tracking-[0.3em] font-medium" style={{ color: 'var(--board-text-secondary)' }}>FineArt Board</p>
+            <h1 className="text-4xl font-bold" style={{ color: 'var(--board-text)' }}>게시판 아카이브</h1>
           </div>
           <div className="flex items-center gap-3 text-sm text-neutral-600">
             <button
@@ -253,83 +253,90 @@ export default function BoardsDirectoryClient({ initialData }) {
         )}
       </header>
 
-      <section className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
+      <section className="rounded-3xl border p-6 shadow-sm bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full lg:max-w-md">
-            <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--board-text-secondary)' }} />
             <input
               type="text"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="게시판 이름·슬러그 검색"
-              className="w-full rounded-full border border-neutral-200 bg-white px-12 py-3 text-sm text-neutral-800 shadow-inner focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-full border px-12 py-3 text-sm shadow-inner focus:outline-none bg-[var(--board-bg)]"
+              style={{ borderColor: 'var(--board-border)', color: 'var(--board-text)' }}
             />
           </div>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm" style={{ color: 'var(--board-text-secondary)' }}>
             총{' '}
-            <span className="font-semibold text-neutral-900">{meta.total?.toLocaleString() ?? 0}</span>
+            <span className="font-semibold" style={{ color: 'var(--board-text)' }}>{meta.total?.toLocaleString() ?? 0}</span>
             개 게시판
           </p>
         </div>
 
-        <div className="mt-6 overflow-x-auto rounded-3xl border border-neutral-100">
-          <table className="min-w-full divide-y divide-neutral-100 text-sm">
-            <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+        <div className="mt-6 overflow-x-auto rounded-3xl bg-[var(--board-bg)]" style={{ border: 'none' }}>
+          <table className="min-w-full divide-y text-sm">
+            <thead className="text-xs font-medium uppercase tracking-wide" style={{ backgroundColor: 'var(--board-bg-secondary)', color: 'var(--board-text-secondary)', borderBottom: '1px solid var(--board-border)' }}>
               <tr>
-                <th className="px-4 py-3 text-left">게시판</th>
-                <th className="px-4 py-3 text-left">슬러그</th>
-                <th className="px-4 py-3 text-left">레이아웃</th>
-                <th className="px-4 py-3 text-left">상위</th>
-                <th className="px-4 py-3 text-right">글 수</th>
-                <th className="px-4 py-3 text-left">표시</th>
-                <th className="px-4 py-3 text-right">순서</th>
-                <th className="px-4 py-3 text-left">업데이트</th>
+                <th className="text-left" style={{ padding: '12px 16px' }}>게시판</th>
+                <th className="text-left" style={{ padding: '12px 16px' }}>슬러그</th>
+                <th className="text-left" style={{ padding: '12px 16px' }}>레이아웃</th>
+                <th className="text-left" style={{ padding: '12px 16px' }}>상위</th>
+                <th className="text-right" style={{ padding: '12px 16px' }}>글 수</th>
+                <th className="text-left" style={{ padding: '12px 16px' }}>표시</th>
+                <th className="text-right" style={{ padding: '12px 16px' }}>순서</th>
+                <th className="text-left" style={{ padding: '12px 16px' }}>업데이트</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 bg-white/90">
+            <tbody className="divide-y bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
               {boards.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-neutral-500">
+                  <td colSpan={8} className="text-center text-sm py-12 px-4" style={{ color: 'var(--board-text-secondary)' }}>
                     등록된 게시판이 없습니다. 관리자 로그인 후 새 게시판을 만들어주세요.
                   </td>
                 </tr>
               ) : (
                 boards.map((board) => (
-                  <tr key={board.id} className="align-top">
-                    <td className="px-4 py-4">
+                  <tr
+                    key={board.id}
+                    className="align-top transition hover:bg-[var(--board-row-hover)]"
+                    style={{ borderBottom: '1px solid var(--board-border)' }}
+                  >
+                    <td className="px-4 py-4" style={{ padding: '16px', color: 'var(--board-text)' }}>
                       <Link
                         href={`/boards/${board.slug}`}
-                        className="font-semibold text-neutral-900 hover:underline"
+                        className="font-semibold hover:opacity-80"
+                        style={{ color: 'var(--board-text)' }}
                       >
                         {board.name}
                       </Link>
-                      <p className="text-xs text-neutral-500">{board.description}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--board-text-secondary)' }}>{board.description}</p>
                     </td>
-                    <td className="px-4 py-4 text-neutral-600">/{board.slug}</td>
-                    <td className="px-4 py-4 text-neutral-600">
+                    <td className="px-4 py-4" style={{ padding: '16px', color: 'var(--board-text-secondary)' }}>/{board.slug}</td>
+                    <td className="px-4 py-4" style={{ padding: '16px', color: 'var(--board-text-secondary)' }}>
                       {LAYOUT_LABELS[board.layoutType] ?? '카드형'}
                     </td>
-                    <td className="px-4 py-4 text-neutral-600">
+                    <td className="px-4 py-4" style={{ padding: '16px', color: 'var(--board-text-secondary)' }}>
                       {board.parentName ?? '-'}
                     </td>
-                    <td className="px-4 py-4 text-right text-neutral-900">
+                    <td className="px-4 py-4 text-right" style={{ padding: '16px', color: 'var(--board-text)' }}>
                       {board.articleCount?.toLocaleString() ?? 0}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4" style={{ padding: '16px' }}>
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
                           board.isVisible
                             ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-neutral-100 text-neutral-500'
+                            : 'bg-[var(--board-bg-secondary)]'
                         }`}
+                        style={!board.isVisible ? { color: 'var(--board-text-secondary)' } : undefined}
                       >
                         {board.isVisible ? '표시' : '숨김'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-right text-neutral-600">
+                    <td className="px-4 py-4 text-right" style={{ padding: '16px', color: 'var(--board-text-secondary)' }}>
                       {board.orderIndex ?? 0}
                     </td>
-                    <td className="px-4 py-4 text-neutral-600">
+                    <td className="px-4 py-4" style={{ padding: '16px', color: 'var(--board-text-secondary)' }}>
                       {board.updatedAt ? formatDate(board.updatedAt) : '-'}
                     </td>
                   </tr>

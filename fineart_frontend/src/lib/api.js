@@ -697,7 +697,7 @@ export const getBoardArticleById = async (slug, id) => {
       .single();
 
     if (error) throw error;
-    return data;
+    return data ? snakeToCamel(data) : null;
   } catch (error) {
     handleSupabaseError(error, 'GET /api/boards/:slug/articles/:id');
   }
@@ -797,11 +797,9 @@ export const createArticle = async (payload) => {
       dbPayload.board_id = normalizeId(dbPayload.board_id);
     }
     
-    // Remove fields that don't exist in schema (isPinned, thumbnailUrl, etc.)
-    // thumbnailUrl can be stored in content as HTML if needed
-    delete dbPayload.is_pinned;
-    delete dbPayload.thumbnail_url;
-    
+    // thumbnail_url optional (null = frontend uses first image in content for list/gallery)
+    // image_url, is_pinned — columns exist (see supabase_migrations/add_articles_thumbnail_image_pinned.sql)
+
     const { data, error } = await supabase
       .from('articles')
       .insert(dbPayload)
@@ -831,10 +829,8 @@ export const updateArticle = async (id, payload) => {
       dbPayload.board_id = normalizeId(dbPayload.board_id);
     }
     
-    // Remove fields that don't exist in schema
-    delete dbPayload.is_pinned;
-    delete dbPayload.thumbnail_url;
-    
+    // thumbnail_url optional; image_url, is_pinned stored in articles table
+
     const { data, error } = await supabase
       .from('articles')
       .update(dbPayload)

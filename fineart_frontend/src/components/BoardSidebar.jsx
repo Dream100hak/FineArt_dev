@@ -4,13 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiChevronDown, FiGrid } from 'react-icons/fi';
+import useDecodedAuth from '@/hooks/useDecodedAuth';
 import { getBoardsSidebar } from '@/lib/api';
 import { BOARDS_UPDATED_EVENT } from '@/lib/boardEvents';
 import { buildFallbackSidebarTree } from '@/lib/boardFallbacks';
 
 const BoardSidebar = ({ activeSlug }) => {
   const pathname = usePathname();
+  const { decodedRole } = useDecodedAuth();
+  const isAdmin = decodedRole === 'admin';
   const [boardTree, setBoardTree] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [collapsedMap, setCollapsedMap] = useState({});
 
   const resolvedActiveSlug = useMemo(() => {
@@ -20,12 +24,22 @@ const BoardSidebar = ({ activeSlug }) => {
   }, [activeSlug, pathname]);
 
   const loadBoards = useCallback(async () => {
+    setLoading(true);
     try {
-      const payload = await getBoardsSidebar();
-      setBoardTree(payload?.items ?? []);
+      const timeoutMs = 8000;
+      const payload = await Promise.race([
+        getBoardsSidebar(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Boards load timeout')), timeoutMs),
+        ),
+      ]);
+      const items = payload?.items ?? [];
+      setBoardTree(items.length > 0 ? items : buildFallbackSidebarTree());
     } catch (error) {
       console.warn('[BoardSidebar] Failed to load boards, using fallback:', error);
       setBoardTree(buildFallbackSidebarTree());
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -56,39 +70,40 @@ const BoardSidebar = ({ activeSlug }) => {
       const isActive = resolvedActiveSlug === node.slug;
 
       return (
-        <div key={node.id} className="space-y-1">
+        <div key={node.id} className="space-y-0.5">
           <div
-            className={`group flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${
+            className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition ${
               isActive
-                ? 'bg-neutral-900 text-white shadow-sm'
-                : 'text-neutral-800 hover:bg-neutral-900/10'
+                ? 'bg-[var(--board-text)] text-white'
+                : 'hover:bg-[var(--board-row-hover)]'
             }`}
-            style={{ paddingLeft: `${depth * 12}px` }}
+            style={{ paddingLeft: `${depth * 10}px`, color: isActive ? 'white' : 'var(--board-text)' }}
           >
             {hasChildren ? (
               <button
                 type="button"
                 onClick={() => toggleNode(node.id)}
                 aria-label="Toggle board group"
-                className={`text-xs transition ${isActive ? 'text-white/80' : 'text-neutral-500 hover:text-neutral-700'}`}
+                className={`shrink-0 text-xs transition ${isActive ? 'text-white/80' : ''}`}
+                style={!isActive ? { color: 'var(--board-text-secondary)' } : undefined}
               >
                 <FiChevronDown
-                  size={12}
+                  size={10}
                   className={`transition ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}
                 />
               </button>
             ) : (
               <span
-                className={`h-2 w-2 rounded-full ${isActive ? 'bg-white' : 'bg-emerald-500'}`}
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? 'bg-white' : 'bg-[var(--board-text-secondary)]'}`}
                 aria-hidden
               />
             )}
-            <Link href={href} className="flex-1 truncate">
+            <Link href={href} className="flex-1 min-w-0 truncate text-[13px]">
               {node.name}
             </Link>
           </div>
           {hasChildren && !isCollapsed && (
-            <div className="space-y-1 border-l border-dashed border-neutral-200 pl-2">
+            <div className="space-y-0.5 border-l border-dashed pl-1.5 ml-1" style={{ borderColor: 'var(--board-border)' }}>
               {renderBoardNodes(node.children, depth + 1)}
             </div>
           )}
@@ -97,26 +112,33 @@ const BoardSidebar = ({ activeSlug }) => {
     });
 
   return (
-    <aside className="hidden w-56 shrink-0 lg:block">
-      <div className="sticky top-20 space-y-4 rounded-3xl border border-neutral-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-        <div className="flex items-center justify-between text-sm font-semibold text-neutral-900">
-          <div className="flex items-center gap-2">
-            <FiGrid /> 게시판
-          </div>
-          <Link
-            href="/admin/boards"
-            className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-medium text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
-          >
-            관리
-          </Link>
+    <aside className="hidden w-44 shrink-0 lg:block -ml-4 lg:-ml-6 pl-4 lg:pl-6 self-stretch">
+      <div className="sticky top-20 h-full min-h-[calc(100vh-5rem)] space-y-2 py-1 pr-3 border-r bg-[var(--board-bg)] flex flex-col" style={{ borderColor: 'var(--board-border)' }}>
+        <div className="flex items-center justify-between gap-2 text-xs font-medium" style={{ color: 'var(--board-text)' }}>
+          <span className="flex items-center gap-1.5">
+            <FiGrid size={14} /> 게시판
+          </span>
+          {isAdmin && (
+            <Link
+              href="/admin/boards"
+              className="rounded px-2 py-0.5 text-[11px] transition hover:opacity-80"
+              style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
+            >
+              관리
+            </Link>
+          )}
         </div>
 
-        {boardTree.length === 0 ? (
-          <p className="rounded-2xl border border-neutral-100 bg-white px-3 py-3 text-xs text-neutral-500">
-            게시판을 불러오는 중입니다.
+        {boardTree.length === 0 && loading ? (
+          <p className="px-2 py-2 text-[11px]" style={{ color: 'var(--board-text-secondary)' }}>
+            불러오는 중…
           </p>
+        ) : boardTree.length > 0 ? (
+          <div className="space-y-0.5">{renderBoardNodes(boardTree)}</div>
         ) : (
-          <div className="space-y-1">{renderBoardNodes(boardTree)}</div>
+          <p className="px-2 py-2 text-[11px]" style={{ color: 'var(--board-text-secondary)' }}>
+            게시판이 없습니다.
+          </p>
         )}
       </div>
     </aside>

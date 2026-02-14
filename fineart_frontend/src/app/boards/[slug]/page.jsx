@@ -61,7 +61,7 @@ export default async function BoardSlugPage({ params }) {
   const initialArticles = await fetchInitialArticles(board.slug ?? slug);
 
   return (
-    <div className="bg-[#f7f4d7]/60">
+    <div className="min-h-screen bg-[var(--board-bg)]">
       <BoardArticlesClient board={board} initialData={initialArticles} />
     </div>
   );

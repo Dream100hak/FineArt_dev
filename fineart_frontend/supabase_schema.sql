@@ -99,8 +99,12 @@ CREATE TABLE IF NOT EXISTS articles (
   content TEXT,
   writer TEXT,
   author TEXT,
+  email TEXT,
   category TEXT,
   view_count INTEGER DEFAULT 0,
+  image_url TEXT,
+  thumbnail_url TEXT,  -- optional; when NULL, UI uses first image in content for list/gallery
+  is_pinned BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

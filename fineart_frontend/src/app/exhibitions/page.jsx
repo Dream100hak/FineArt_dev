@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import ExhibitionFilters from '@/components/exhibitions/ExhibitionFilters';
 import ExhibitionPagination from '@/components/exhibitions/ExhibitionPagination';
 import { getExhibitions } from '@/lib/api';
@@ -72,28 +72,42 @@ export default async function ExhibitionsPage({ searchParams }) {
   const hasResults = visibleExhibitions.length > 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-6 py-16">
-      <header className="space-y-4">
-        <p className="text-xs uppercase tracking-[0.4em] text-neutral-500">FineArt Exhibition</p>
-        <h1 className="text-5xl font-semibold text-neutral-900">전시 일정</h1>
+    <div className="screen-padding section mx-auto flex w-full max-w-7xl flex-col gap-8 py-10">
+      <header
+        className="space-y-3 rounded-3xl border p-6 shadow-sm"
+        style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+      >
+        <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--board-text-secondary)' }}>
+          FineArt Exhibition
+        </p>
+        <h1 className="text-4xl font-bold md:text-5xl" style={{ color: 'var(--board-text)' }}>
+          전시 일정
+        </h1>
         {fetchError && (
-          <p className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-700">
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
             API 응답에 문제가 발생했습니다. 새로고침 후 다시 시도해주세요.
           </p>
         )}
       </header>
 
-      <ExhibitionFilters categories={EXHIBITION_CATEGORIES} activeCategory={category} initialKeyword={keyword} />
+      <section
+        className="rounded-3xl border p-6 shadow-sm"
+        style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+      >
+        <ExhibitionFilters categories={EXHIBITION_CATEGORIES} activeCategory={category} initialKeyword={keyword} />
 
-      <section>
-        <header className="mb-10 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <header className="mb-8 mt-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Category</p>
-            <h2 className="text-3xl font-semibold text-neutral-900">
+            <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--board-text-secondary)' }}>
+              Category
+            </p>
+            <h2 className="text-3xl font-semibold" style={{ color: 'var(--board-text)' }}>
               {category ? getExhibitionCategoryLabel(category) : '전체'}
             </h2>
           </div>
-          <p className="text-sm text-neutral-500">총 {total}건 · 페이지 {currentPage}</p>
+          <p className="text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+            총 {total}건 · 페이지 {currentPage}
+          </p>
         </header>
 
         {hasResults ? (

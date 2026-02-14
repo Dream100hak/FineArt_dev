@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiArrowLeft } from 'react-icons/fi';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
@@ -19,7 +19,6 @@ const defaultForm = {
   writer: '',
   email: '',
   content: '',
-  thumbnailUrl: '',
   category: 'general',
   isPinned: false,
 };
@@ -37,17 +36,12 @@ export default function BoardEditorClient({ board, initialArticle }) {
     writer: initialArticle?.writer ?? defaultForm.writer,
     email: initialArticle?.email ?? decodedEmail ?? defaultForm.email,
     content: initialArticle?.content ?? defaultForm.content,
-    thumbnailUrl: initialArticle?.thumbnailUrl ?? defaultForm.thumbnailUrl,
     category: initialArticle?.category?.toLowerCase?.() ?? defaultForm.category,
     isPinned: initialArticle?.isPinned ?? defaultForm.isPinned,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [uploadingField, setUploadingField] = useState(null);
-
-  const thumbInputRef = useRef(null);
-
   const isEditing = Boolean(initialArticle?.id);
   const editorReadOnly = board?.isFallback;
 
@@ -60,25 +54,6 @@ export default function BoardEditorClient({ board, initialArticle }) {
       }));
     }
   }, [decodedEmail, initialArticle?.writer]);
-
-  const uploadAndSetField = async (file, field) => {
-    if (!file) return;
-    setUploadingField(field);
-    setError('');
-    try {
-      const result = await uploadArticleImage(file);
-      const url = resolveUploadUrl(result);
-      if (url) {
-        setForm((prev) => ({ ...prev, [field]: url }));
-        setSuccess(field === 'thumbnailUrl' ? '썸네일이 업로드되었습니다.' : '대표 이미지가 업로드되었습니다.');
-      }
-    } catch (err) {
-      console.error('[Board] Failed to upload image:', err);
-      setError('이미지 업로드에 실패했습니다.');
-    } finally {
-      setUploadingField(null);
-    }
-  };
 
   const handleEditorImageUpload = async (file) => {
     const result = await uploadArticleImage(file);
@@ -143,13 +118,14 @@ export default function BoardEditorClient({ board, initialArticle }) {
 
     try {
       const payload = {
-        boardId: board.id, // Changed from boardTypeId to boardId
+        boardId: board.id,
         title: form.title.trim(),
         content: form.content,
         writer: form.writer.trim() || 'FineArt 사용자',
-        author: form.email.trim() || decodedEmail || 'user@fineart.local', // Use author field for email
+        author: form.email.trim() || decodedEmail || 'user@fineart.local',
         category: form.category,
-        // Note: isPinned is not in the schema, so we'll handle it via category
+        thumbnailUrl: null,
+        isPinned: form.isPinned ?? false,
       };
 
       if (isEditing) {
@@ -170,153 +146,118 @@ export default function BoardEditorClient({ board, initialArticle }) {
   };
 
   return (
-    <div className="screen-padding section mx-auto w-full max-w-4xl space-y-6 py-10">
-      <div className="flex flex-col gap-3 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-neutral-500">{board.slug}</p>
-          <h1 className="text-3xl font-semibold text-neutral-900">
-            {isEditing ? '게시글 수정' : '새 게시글 작성'}
-          </h1>
-          <p className="text-sm text-neutral-600">{board.name}</p>
-        </div>
-        <Link
-          href={`/boards/${board.slug}`}
-          className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
-        >
-          <FiArrowLeft /> 게시판으로
-        </Link>
-      </div>
-
-      {error && (
-        <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">{error}</p>
-      )}
-      {success && (
-        <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-xs text-emerald-700">{success}</p>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-sm">
-        <label className="block text-sm font-medium text-neutral-700">
-          제목
-          <input
-            type="text"
-            value={form.title}
-            onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-            className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-            placeholder="게시글 제목을 입력하세요."
-          />
-        </label>
-
-        <div className="grid gap-4 md:grid-cols-1">
-          <label className="text-sm font-medium text-neutral-700">
-            작성자
-            <input
-              type="text"
-              value={form.writer}
-              onChange={(event) => setForm((prev) => ({ ...prev, writer: event.target.value }))}
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-              placeholder="닉네임 또는 이름"
-            />
-          </label>
+    <div className="min-h-screen bg-[var(--board-bg)]">
+      <div className="screen-padding mx-auto w-full max-w-3xl py-8">
+        <div className="mb-6 flex flex-col gap-4 rounded-3xl border p-6 shadow-sm bg-[var(--board-bg)] sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'var(--board-border)' }}>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] font-medium" style={{ color: 'var(--board-text-secondary)' }}>
+              {board.slug}
+            </p>
+            <h1 className="text-2xl font-semibold sm:text-3xl" style={{ color: 'var(--board-text)' }}>
+              {isEditing ? '게시글 수정' : '새 게시글 작성'}
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--board-text-secondary)' }}>{board.name}</p>
+          </div>
+          <Link
+            href={`/boards/${board.slug}`}
+            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-4 py-2 text-sm transition hover:border-neutral-900 hover:text-neutral-900"
+          >
+            <FiArrowLeft /> 게시판으로
+          </Link>
         </div>
 
-        {isAdmin && (
-          <label className="text-sm font-medium text-neutral-700">
-            게시글 구분
-            <select
-              value={form.category}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, category: event.target.value }))
-              }
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-            >
-              {ARTICLE_CATEGORY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        {error && (
+          <p className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>
+        )}
+        {success && (
+          <p className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">{success}</p>
         )}
 
-        <div className="grid gap-4 md:grid-cols-1">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-neutral-700">썸네일 이미지</p>
-            {form.thumbnailUrl ? (
-              <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
-                <img
-                  src={form.thumbnailUrl}
-                  alt="썸네일"
-                  className="h-48 w-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed border-neutral-200 text-sm text-neutral-500">
-                썸네일이 없습니다.
-              </div>
-            )}
-            <div className="flex gap-2">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-8 rounded-3xl border p-6 shadow-sm bg-[var(--board-bg)]"
+          style={{ borderColor: 'var(--board-border)' }}
+        >
+          <section className="space-y-4">
+            <p className="text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--board-text-secondary)' }}>
+              기본 정보
+            </p>
+            <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
+              제목
               <input
-                ref={thumbInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = '';
-                  uploadAndSetField(file, 'thumbnailUrl');
-                }}
+                type="text"
+                value={form.title}
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
+                placeholder="게시글 제목을 입력하세요."
               />
-              <button
-                type="button"
-                onClick={() => thumbInputRef.current?.click()}
-                disabled={uploadingField === 'thumbnailUrl'}
-                className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-700 transition hover:border-neutral-900 hover:text-neutral-900 disabled:opacity-50"
-              >
-                {uploadingField === 'thumbnailUrl' ? '업로드 중...' : '썸네일 선택'}
-              </button>
-              {form.thumbnailUrl && (
-                <button
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, thumbnailUrl: '' }))}
-                  className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
-                >
-                  제거
-                </button>
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
+                작성자
+                <input
+                  type="text"
+                  value={form.writer}
+                  onChange={(event) => setForm((prev) => ({ ...prev, writer: event.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
+                  placeholder="닉네임 또는 이름"
+                />
+              </label>
+
+              {isAdmin && (
+                <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
+                  게시글 구분
+                  <select
+                    value={form.category}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, category: event.target.value }))
+                    }
+                    className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
+                  >
+                    {ARTICLE_CATEGORY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               )}
             </div>
-          </div>
-        </div>
+          </section>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-700">본문</label>
+          <section className="space-y-4">
+            <p className="text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--board-text-secondary)' }}>
+              본문
+            </p>
           <RichTextEditor
             value={form.content}
             onChange={(content) => setForm((prev) => ({ ...prev, content }))}
             readOnly={editorReadOnly}
-            placeholder="내용을 입력해 주세요."
+            placeholder="내용을 입력해 주세요. 이미지를 넣으면 갤러리형 게시판에서 목록 썸네일로 사용됩니다."
             onUploadImage={handleEditorImageUpload}
           />
-          <p className="text-xs text-neutral-500">
-            이미지, 링크, 서식을 자유롭게 사용하세요. 저장 시 HTML 형태로 백엔드에 전달됩니다.
-          </p>
-        </div>
+            <p className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>
+              이미지, 링크, 서식을 자유롭게 사용하세요. 본문에 넣은 첫 번째 이미지가 갤러리형 목록에 썸네일로 표시됩니다.
+            </p>
+          </section>
 
-        <div className="flex items-center justify-end gap-3">
-          <Link
-            href={`/boards/${board.slug}`}
-            className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600"
-          >
-            취소
-          </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-full bg-neutral-900 px-6 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
-          >
-            {saving ? '저장 중...' : isEditing ? '게시글 수정' : '게시글 등록'}
-          </button>
-        </div>
-      </form>
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-6" style={{ borderColor: 'var(--board-border)' }}>
+            <Link
+              href={`/boards/${board.slug}`}
+              className="rounded-full border border-neutral-200 px-4 py-2 text-sm transition hover:border-neutral-900 hover:text-neutral-900"
+            >
+              취소
+            </Link>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {saving ? '저장 중...' : isEditing ? '수정 저장' : '게시글 등록'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

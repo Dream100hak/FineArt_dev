@@ -17,16 +17,6 @@ const PREVIEW_CONFIG = {
       </div>
     ),
   },
-  card: {
-    label: '카드형',
-    pattern: (
-      <div className="grid grid-cols-3 gap-1">
-        {[0, 1, 2].map((card) => (
-          <div key={card} className="h-8 rounded border border-neutral-200 bg-neutral-50" />
-        ))}
-      </div>
-    ),
-  },
   list: {
     label: '리스트형',
     pattern: (
@@ -77,7 +67,7 @@ const PREVIEW_CONFIG = {
 };
 
 export default function LayoutPreview({ type }) {
-  const preview = PREVIEW_CONFIG[type] ?? PREVIEW_CONFIG.card;
+  const preview = PREVIEW_CONFIG[type] ?? PREVIEW_CONFIG.gallery;
   return (
     <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/70 px-3 py-2 text-xs text-neutral-500">
       <p className="mb-1 font-semibold text-neutral-700">{preview.label}</p>

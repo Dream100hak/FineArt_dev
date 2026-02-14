@@ -52,9 +52,18 @@ export default function ListBoard({ board, articles, meta }) {
   const baseNumber = metaTotal - (metaPage - 1) * metaSize;
   let pinnedCount = 0;
 
+  /* 한신아트 게시판 테이블 양식: header #F5F5F5, border #EEEEEE, row hover #F8F9FA, 공지 plain-text */
   return (
-    <div className="rounded-3xl border border-neutral-100 bg-white shadow-sm">
-      <div className="hidden px-5 py-3 text-xs font-semibold uppercase text-neutral-500 sm:grid sm:grid-cols-[90px_110px_1fr_140px_120px_80px]">
+    <div className="bg-[var(--board-bg)] shadow-sm" style={{ border: 'none' }}>
+      <div
+        className="hidden sm:grid sm:grid-cols-[90px_110px_1fr_140px_120px_80px] border-b text-xs font-medium uppercase tracking-wide"
+        style={{
+          backgroundColor: 'var(--board-bg-secondary)',
+          color: 'var(--board-text-secondary)',
+          padding: '12px 16px',
+          borderBottomColor: 'var(--board-border)',
+        }}
+      >
         <span>{TABLE_HEADERS.number}</span>
         <span>{TABLE_HEADERS.type}</span>
         <span>{TABLE_HEADERS.title}</span>
@@ -62,67 +71,62 @@ export default function ListBoard({ board, articles, meta }) {
         <span>{TABLE_HEADERS.date}</span>
         <span className="text-right">{TABLE_HEADERS.views}</span>
       </div>
-      <div className="divide-y divide-neutral-100">
+      <div className="divide-y" style={{ borderColor: 'var(--board-border)' }}>
         {articles.map((article, index) => {
-          const isNoticeFlag = Boolean(
+          const isPinnedFlag = Boolean(
             article.isPinned ?? article.IsPinned ?? article.isBoard ?? article.IsBoard,
           );
-          let numberLabel;
-          if (isNoticeFlag) {
-            numberLabel = CATEGORY_LABELS.notice;
-            pinnedCount += 1;
-          } else {
-            const ord = baseNumber - (index - pinnedCount);
-            numberLabel = ord > 0 ? ord : article.id;
-          }
-
-          const normalizedCategory = isNoticeFlag
+          const normalizedCategory = isPinnedFlag
             ? 'notice'
             : normalizeCategory(article.category);
+          const isNotice = normalizedCategory === 'notice';
+          if (isNotice) pinnedCount += 1;
+          const ord = baseNumber - index;
+          const numberDisplay = ord > 0 ? ord : article.id;
           const categoryLabel =
             CATEGORY_LABELS[normalizedCategory] ?? CATEGORY_LABELS[DEFAULT_CATEGORY] ?? normalizedCategory;
-          const categoryBadgeClass =
-            normalizedCategory === 'notice'
-              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-              : 'bg-neutral-100 text-neutral-600 border border-neutral-200';
 
           return (
             <div
               key={article.id}
-              className={`grid items-center gap-3 px-5 py-3 text-sm transition hover:bg-neutral-50 sm:grid-cols-[90px_110px_1fr_140px_120px_80px] ${
-                article.isPinned ? 'bg-rose-50/80' : ''
+              className={`grid items-center gap-3 text-sm transition sm:grid-cols-[90px_110px_1fr_140px_120px_80px] px-4 py-4 ${
+                isNotice ? 'hover:bg-[var(--board-notice-bg-hover)]' : 'hover:bg-[var(--board-row-hover)]'
               }`}
+              style={{
+                color: 'var(--board-text)',
+                backgroundColor: isNotice ? 'var(--board-notice-bg)' : undefined,
+              }}
             >
-              <div className="text-xs font-semibold text-neutral-500">
-                {article.isPinned ? (
-                  <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-rose-700">
-                    {CATEGORY_LABELS.notice}
+              <div className="text-xs font-medium" style={{ color: 'var(--board-text-secondary)' }}>
+                <span>{numberDisplay}</span>
+              </div>
+              <div className="text-xs sm:text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+                {isNotice ? (
+                  <span
+                    className="inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-semibold text-white"
+                    style={{ backgroundColor: 'var(--board-notice-badge)' }}
+                  >
+                    {categoryLabel}
                   </span>
                 ) : (
-                  <span>{numberLabel}</span>
-                )}
-              </div>
-              <div className="text-xs sm:text-sm">
-                <span
-                  className={`inline-flex rounded-full px-3 py-1 font-semibold ${categoryBadgeClass}`}
-                >
-                  {categoryLabel}
-                </span>
-                {!article.isPinned && (
-                  <span className="mt-1 block text-[11px] text-neutral-400 sm:hidden">{numberLabel}</span>
+                  <>
+                    <span className="font-medium">{categoryLabel}</span>
+                    <span className="mt-1 block text-[11px] sm:hidden">{numberDisplay}</span>
+                  </>
                 )}
               </div>
               <div className="min-w-0">
                 <Link
                   href={`/boards/${slug}/${article.id}`}
-                  className="block truncate text-base font-semibold text-neutral-900 hover:text-neutral-600"
+                  className="block truncate font-normal hover:opacity-80"
+                  style={{ color: 'var(--board-text)' }}
                 >
                   {article.title}
                 </Link>
               </div>
-              <div className="text-neutral-600">{article.writer}</div>
-              <div className="text-neutral-500">{formatKoreanDate(article.createdAt)}</div>
-              <div className="text-right text-neutral-600">
+              <div style={{ color: 'var(--board-text-secondary)' }}>{article.writer}</div>
+              <div style={{ color: 'var(--board-text-secondary)' }}>{formatKoreanDate(article.createdAt)}</div>
+              <div className="text-right" style={{ color: 'var(--board-text-secondary)' }}>
                 {article.views?.toLocaleString?.() ?? article.views}
               </div>
             </div>

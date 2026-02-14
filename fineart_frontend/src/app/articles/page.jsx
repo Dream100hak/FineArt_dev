@@ -118,46 +118,61 @@ export default async function ArticlesPage(props) {
   };
 
   return (
-    <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-10">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
+    <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
+      <header
+        className="space-y-3 rounded-3xl border p-6 shadow-sm"
+        style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Stories &amp; Insights</p>
-            <h1 className="text-4xl font-semibold text-neutral-900">FineArt 게시판</h1>
+            <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--board-text-secondary)' }}>
+              Stories &amp; Insights
+            </p>
+            <h1 className="text-4xl font-bold" style={{ color: 'var(--board-text)' }}>
+              FineArt 게시판
+            </h1>
           </div>
           <AuthDebugBadge />
         </div>
-        <p className="text-neutral-600">
+        <p style={{ color: 'var(--board-text-secondary)' }}>
           공지, 이벤트, 자유게시판을 한 곳에서 확인하고 검색·필터링해 보세요.
         </p>
         {isFallback && (
-          <p className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-800">
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
             서버 응답이 지연되어 샘플 데이터를 표시하고 있습니다.
           </p>
         )}
       </header>
 
-      <ArticleFilters
-        categories={CATEGORY_TABS}
-        activeCategory={category}
-        initialKeyword={keyword}
-        pageSize={meta.size}
-      />
+      <section
+        className="rounded-3xl border p-6 shadow-sm"
+        style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+      >
+        <ArticleFilters
+          categories={CATEGORY_TABS}
+          activeCategory={category}
+          initialKeyword={keyword}
+          pageSize={meta.size}
+        />
 
-      {!hasResults ? (
-        <div className="rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center text-neutral-500">
-          조건에 해당하는 게시글이 없습니다. 다른 검색어나 카테고리를 선택해 보세요.
-        </div>
-      ) : (
-        <>
-          <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </section>
-          <ArticlePagination page={meta.page} size={meta.size} total={meta.total} />
-        </>
-      )}
+        {!hasResults ? (
+          <div
+            className="rounded-3xl border border-dashed p-10 text-center text-sm"
+            style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
+          >
+            조건에 해당하는 게시글이 없습니다. 다른 검색어나 카테고리를 선택해 보세요.
+          </div>
+        ) : (
+          <>
+            <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {articles.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+            <ArticlePagination page={meta.page} size={meta.size} total={meta.total} />
+          </>
+        )}
+      </section>
     </div>
   );
 }

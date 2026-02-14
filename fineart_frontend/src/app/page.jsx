@@ -149,7 +149,7 @@ export default async function Home() {
   const { heroSlides, artworks, artists, boards } = await loadHomeData();
 
   return (
-    <main className="bg-[#f8f4e8] text-neutral-900">
+    <main className="bg-[var(--board-bg)] text-neutral-900">
       <HeroCarousel slides={heroSlides} />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 py-16">
@@ -244,33 +244,48 @@ export default async function Home() {
         <section className="space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">게시판</p>
-              <h2 className="text-3xl font-semibold">오늘의 포스트</h2>
+              <p className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--board-text-secondary)' }}>
+                게시판
+              </p>
+              <h2 className="text-3xl font-semibold" style={{ color: 'var(--board-text)' }}>
+                오늘의 포스트
+              </h2>
             </div>
             <Link
               href="/boards"
-              className="rounded-full border border-neutral-900 px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 hover:bg-neutral-900 hover:text-white"
+              className="rounded-full border px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 hover:opacity-90"
+              style={{ borderColor: 'var(--board-text)', color: 'var(--board-text)' }}
             >
               전체 게시판
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm">
-            <div className="grid grid-cols-12 bg-neutral-50 px-4 py-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+          <div
+            className="overflow-hidden rounded-3xl border shadow-sm"
+            style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+          >
+            <div
+              className="grid grid-cols-12 px-4 py-3 text-xs uppercase tracking-[0.25em]"
+              style={{ backgroundColor: 'var(--board-bg-secondary)', color: 'var(--board-text-secondary)' }}
+            >
               <span className="col-span-4">게시판</span>
               <span className="col-span-6">소개</span>
               <span className="col-span-2 text-right">글 수</span>
             </div>
-            <div className="divide-y divide-neutral-100">
+            <div className="divide-y divide-[var(--board-border)]">
               {boards.map((board) => (
                 <Link
                   key={board.id}
                   href={`/boards/${board.slug}`}
-                  className="grid grid-cols-12 items-center px-4 py-4 transition hover:bg-neutral-50"
+                  className="grid grid-cols-12 items-center px-4 py-4 transition hover:bg-[var(--board-row-hover)]"
                 >
-                  <span className="col-span-4 text-sm font-semibold text-neutral-900">{board.name}</span>
-                  <span className="col-span-6 text-sm text-neutral-600">{board.description}</span>
-                  <span className="col-span-2 text-right text-sm text-neutral-500">
+                  <span className="col-span-4 text-sm font-semibold" style={{ color: 'var(--board-text)' }}>
+                    {board.name}
+                  </span>
+                  <span className="col-span-6 text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+                    {board.description}
+                  </span>
+                  <span className="col-span-2 text-right text-sm" style={{ color: 'var(--board-text-secondary)' }}>
                     {board.articleCount?.toLocaleString?.() ?? 0}
                   </span>
                 </Link>

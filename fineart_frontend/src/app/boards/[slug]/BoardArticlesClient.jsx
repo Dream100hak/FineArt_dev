@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiFileText } from 'react-icons/fi';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import BoardSidebar from '@/components/BoardSidebar';
@@ -17,6 +16,13 @@ const stripHtml = (value = '') =>
     ?.replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+/** 본문 HTML에서 첫 번째 img src URL 추출 (갤러리형 등 썸네일 없을 때 사용) */
+const extractFirstImageUrl = (html = '') => {
+  if (!html || typeof html !== 'string') return '';
+  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return match?.[1]?.trim() ?? '';
+};
 
 const CATEGORY_ALIASES = {
   notice: 'notice',
@@ -89,7 +95,11 @@ const normalizeArticle = (article, index) => {
     views: article.views ?? 0,
     boardSlug: boardInfo.slug ?? article.boardSlug ?? boardInfo?.Slug ?? '',
     imageUrl: article.imageUrl ?? article.heroImage ?? '',
-    thumbnailUrl: article.thumbnailUrl ?? article.thumbUrl ?? '',
+    thumbnailUrl:
+      article.thumbnailUrl ??
+      article.thumbUrl ??
+      extractFirstImageUrl(article.content ?? '') ??
+      '',
     isPinned: isNoticeFlag,
   };
 };
@@ -113,6 +123,11 @@ export default function BoardArticlesClient({ board, initialData }) {
   const { decodedRole, isAuthenticated } = useDecodedAuth();
   const isAdmin = decodedRole === 'admin';
   const canWrite = isAuthenticated && !initialData?.isFallback;
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const normalizedInitialArticles = useMemo(
     () => sortArticles((initialData.items ?? []).map(normalizeArticle).filter(Boolean)),
@@ -216,7 +231,7 @@ export default function BoardArticlesClient({ board, initialData }) {
   };
 
   const layoutComponents = {
-    card: ShowcaseBoard,
+    card: ShowcaseBoard, // 레거시: 카드형 제거 후 기존 데이터용
     cards: ShowcaseBoard,
     gallery: ShowcaseBoard,
     table: ListBoard,
@@ -236,15 +251,15 @@ export default function BoardArticlesClient({ board, initialData }) {
 
     if (filteredArticles.length === 0) {
       return (
-        <div className="rounded-3xl border border-dashed border-neutral-200 bg-white/80 p-10 text-center text-sm text-neutral-500">
+        <div className="rounded-3xl border border-dashed p-10 text-center text-sm bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}>
           조건에 맞는 게시글이 없습니다. 다른 검색어나 카테고리를 선택해 주세요.
         </div>
       );
     }
 
-    const normalizedLayout = (currentBoard?.layoutType ?? 'card').toLowerCase();
+    const normalizedLayout = (currentBoard?.layoutType ?? 'list').toLowerCase();
     const layoutKey = normalizedLayout === 'table' ? 'list' : normalizedLayout;
-    const LayoutComponent = layoutComponents[layoutKey] ?? CardBoard;
+    const LayoutComponent = layoutComponents[layoutKey] ?? ShowcaseBoard;
     return (
       <LayoutComponent
         board={currentBoard ?? board}
@@ -255,37 +270,28 @@ export default function BoardArticlesClient({ board, initialData }) {
   };
 
   return (
-    <div className="screen-padding section mx-auto w-full max-w-screen-2xl py-10">
-      <div className="flex gap-6 lg:gap-10">
-        <BoardSidebar activeSlug={currentBoard?.slug ?? board.slug} />
-        <div className="flex min-w-0 flex-1 flex-col gap-8">
-          <header className="space-y-4 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">
-                  {currentBoard?.slug ?? board.slug ?? 'board'}
-                </p>
-                <h1 className="text-4xl font-semibold text-neutral-900">
-                  {currentBoard?.name ?? board.name}
-                </h1>
-                <p className="mt-2 text-sm text-neutral-600">{currentBoard?.description}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-600">
-                <p>
-                  게시글{' '}
-                  <span className="font-semibold text-neutral-900">
-                    {displayTotal?.toLocaleString() ?? currentBoard?.articleCount ?? 0}
-                  </span>
-                </p>
-                {isAdmin && (
-                  <Link
-                    href={`/admin/boards?slug=${encodeURIComponent(currentBoard?.slug ?? board.slug ?? '')}`}
-                    className="rounded-full border border-neutral-200 px-4 py-2 transition hover:border-neutral-900 hover:text-neutral-900"
-                  >
-                    게시판 설정
-                  </Link>
-                )}
-                {canWrite ? (
+    <div className="w-full bg-[var(--board-bg)]">
+      <header
+        className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] border-b shadow-sm bg-[var(--board-bg)] py-5 px-4"
+        style={{ borderColor: 'var(--board-border)' }}
+      >
+        <div className="mx-auto w-full max-w-screen-2xl screen-padding flex flex-col gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-4xl font-bold" style={{ color: 'var(--board-text)' }}>
+                {currentBoard?.name ?? board.name}
+              </h1>
+              <p className="mt-2 text-sm" style={{ color: 'var(--board-text-secondary)' }}>{currentBoard?.description}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+              <p>
+                게시글{' '}
+                <span className="font-semibold" style={{ color: 'var(--board-text)' }}>
+                  {displayTotal?.toLocaleString() ?? currentBoard?.articleCount ?? 0}
+                </span>
+              </p>
+              {mounted ? (
+                canWrite ? (
                   <Link
                     href={`/boards/${board.slug}/write`}
                     className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2 font-semibold text-white transition hover:bg-neutral-800"
@@ -299,10 +305,18 @@ export default function BoardArticlesClient({ board, initialData }) {
                   >
                     로그인 후 글쓰기
                   </Link>
-                )}
-              </div>
+                )
+              ) : (
+                <Link
+                  href="/login"
+                  className="rounded-full border border-neutral-200 px-4 py-2 text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+                >
+                  로그인 후 글쓰기
+                </Link>
+              )}
             </div>
-            {isFallback && (
+          </div>
+          {isFallback && (
               <p className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-800">
                 {initialData?.error ?? '백엔드 연결이 없어 임시 게시글을 표시합니다.'}
               </p>
@@ -312,19 +326,26 @@ export default function BoardArticlesClient({ board, initialData }) {
                 {error}
               </p>
             )}
-          </header>
+        </div>
+      </header>
 
-          <section className="space-y-4 rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
+      <div className="screen-padding mx-auto w-full max-w-screen-2xl py-4 min-h-[calc(100vh-12rem)] bg-[var(--board-bg)]">
+        <div className="flex gap-0 min-h-full items-stretch">
+          <BoardSidebar activeSlug={currentBoard?.slug ?? board.slug} />
+          <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)]">
+          <section className="space-y-3 rounded-lg border p-4 bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
             <form
-              className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white/70 p-4 text-sm text-neutral-700 md:flex-row md:items-center md:gap-4"
+              className="flex flex-col gap-2 rounded-lg border p-3 text-sm md:flex-row md:items-center md:gap-3 bg-[var(--board-bg-secondary)]"
+              style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
               onSubmit={(event) => event.preventDefault()}
             >
               <div className="flex items-center gap-2">
-                <label className="text-xs uppercase tracking-[0.25em] text-neutral-500">검색 기준</label>
+                <label className="text-xs uppercase tracking-[0.25em] font-medium">검색 기준</label>
                 <select
                   value={searchField}
                   onChange={(event) => setSearchField(event.target.value)}
-                  className="rounded-xl border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+                  className="rounded-xl border px-3 py-2 text-sm focus:outline-none bg-[var(--board-bg)]"
+                  style={{ borderColor: 'var(--board-border)', color: 'var(--board-text)' }}
                 >
                   <option value="title">글 제목</option>
                   <option value="writer">작성자</option>
@@ -336,13 +357,15 @@ export default function BoardArticlesClient({ board, initialData }) {
                   value={searchValue}
                   onChange={(event) => setSearchValue(event.target.value)}
                   placeholder="검색어를 입력하세요"
-                  className="flex-1 rounded-xl border border-neutral-300 px-4 py-2 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                  className="flex-1 rounded-xl border px-4 py-2 text-sm focus:outline-none bg-[var(--board-bg)]"
+                  style={{ borderColor: 'var(--board-border)', color: 'var(--board-text)' }}
                 />
                 {searchValue && (
                   <button
                     type="button"
                     onClick={() => setSearchValue('')}
-                    className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+                    className="rounded-full border px-4 py-2 text-sm transition hover:opacity-80"
+                    style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
                   >
                     초기화
                   </button>
@@ -353,7 +376,7 @@ export default function BoardArticlesClient({ board, initialData }) {
             {renderContent()}
 
             {!normalizedSearch && (
-              <div className="flex flex-col items-center gap-3 text-sm text-neutral-600 md:flex-row md:justify-between">
+              <div className="flex flex-col items-center gap-3 text-sm md:flex-row md:justify-between" style={{ color: 'var(--board-text-secondary)' }}>
                 <p>
                   {meta.page} / {totalPages} 페이지
                 </p>
@@ -378,17 +401,7 @@ export default function BoardArticlesClient({ board, initialData }) {
               </div>
             )}
           </section>
-
-          <section className="rounded-3xl border border-neutral-200 bg-white/70 p-6 text-sm text-neutral-600 shadow-sm">
-            <h2 className="flex items-center gap-2 text-xl font-semibold text-neutral-900">
-              <FiFileText /> 게시판 이용 안내
-            </h2>
-            <ul className="mt-3 list-disc space-y-2 pl-4 text-neutral-600">
-              <li>글 작성 시 닉네임 또는 이메일을 남겨 주세요.</li>
-              <li>허위 사실, 저작권 침해, 반복 광고 글은 숨김 처리될 수 있습니다.</li>
-              <li>전시/행사 게시판의 콘텐츠는 메인 홍보 영역에 소개될 수 있습니다.</li>
-            </ul>
-          </section>
+          </div>
         </div>
       </div>
     </div>

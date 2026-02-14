@@ -21,9 +21,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
-      <body className={`${geistSans.variable} ${geistMono.variable} bg-body antialiased text-neutral-900`}>
-        <div className="min-h-screen bg-body text-base text-neutral-900">
-          <div className="flex min-h-screen flex-col">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased text-neutral-900`}>
+        <div className="min-h-screen text-base text-neutral-900">
+          <div className="flex min-h-screen flex-col bg-[var(--board-bg)]">
             <TopNav />
             <main className="flex-1 pt-6">{children}</main>
             <Footer />

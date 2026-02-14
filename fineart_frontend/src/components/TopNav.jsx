@@ -295,16 +295,8 @@ export default function TopNav() {
                   <div className="flex items-center justify-between pb-4">
                     <div>
                       <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">Boards</p>
-                      <h3 className="text-lg font-semibold text-neutral-900">주제별 게시판 모아보기</h3>
+                      <h3 className="text-lg font-semibold text-neutral-900">게시판 모아보기</h3>
                     </div>
-                    {isAdmin && (
-                      <Link
-                        href="/admin/boards"
-                        className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-800 transition hover:border-neutral-900 hover:text-neutral-900"
-                      >
-                        보드 관리
-                      </Link>
-                    )}
                   </div>
 
                   {boardGroups.length === 0 ? (
@@ -331,9 +323,7 @@ export default function TopNav() {
                               className="text-neutral-300 transition group-hover:translate-x-1 group-hover:text-neutral-500"
                             />
                           </div>
-                          <p className="mt-2 text-xs text-neutral-500 line-clamp-2">
-                            {group.description ?? '게시판으로 이동'}
-                          </p>
+              
                           <div className="mt-3 flex flex-wrap gap-2">
                             {(group.children ?? []).map((child) => (
                               <Link

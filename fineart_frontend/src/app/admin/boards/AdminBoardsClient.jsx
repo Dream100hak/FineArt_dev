@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -19,7 +19,6 @@ const defaultForm = {
 };
 
 const layoutOptions = [
-  { value: 'card', label: '카드형', description: '카드 형태로 강조되는 그리드' },
   { value: 'list', label: '리스트형', description: '간결한 요약 리스트' },
   { value: 'gallery', label: '갤러리형', description: '이미지 썸네일 중심' },
   { value: 'media', label: '미디어형', description: '영상·미디어 콘텐츠용' },
@@ -28,6 +27,7 @@ const layoutOptions = [
 
 const FALLBACK_LAYOUT_LABELS = {
   table: '리스트형',
+  card: '갤러리형', // 레거시: 카드형 제거 후 기존 데이터 표시용
 };
 
 const getLayoutLabel = (value) =>
@@ -37,7 +37,9 @@ const getLayoutLabel = (value) =>
 
 const normalizeLayoutType = (value) => {
   const normalized = (value ?? 'list').toLowerCase();
-  return normalized === 'table' ? 'list' : normalized;
+  if (normalized === 'table') return 'list';
+  if (normalized === 'card' || normalized === 'cards') return 'gallery'; // 레거시
+  return normalized;
 };
 
 const normalizeBoards = (items = []) =>
@@ -223,9 +225,11 @@ export default function AdminBoardsClient() {
     );
   }
 
+  const editingBoard = editingId ? boards.find((b) => b.id === editingId) : null;
+
   return (
     <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
-      <header className="space-y-3 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-sm">
+      <header className="space-y-3 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
         <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Board Management</p>
         <h1 className="text-4xl font-semibold text-neutral-900">게시판 관리</h1>
         <p className="text-sm text-neutral-600">
@@ -243,110 +247,33 @@ export default function AdminBoardsClient() {
         )}
       </header>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-sm"
+      <div
+        className={`rounded-3xl border p-6 shadow-sm transition ${
+          editingId
+            ? 'border-amber-200 bg-amber-50/30'
+            : 'border-neutral-200 bg-white'
+        }`}
       >
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm font-medium text-neutral-700">
-            게시판 이름
-            <input
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-              placeholder="예: 공지사항"
-            />
-          </label>
-          <label className="text-sm font-medium text-neutral-700">
-            슬러그
-            <input
-              value={form.slug}
-              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-              placeholder="예: notice"
-            />
-          </label>
-        </div>
-
-        <label className="text-sm font-medium text-neutral-700">
-          설명
-          <textarea
-            value={form.description}
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            className="mt-1 min-h-[100px] w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-            placeholder="게시판 소개 문구"
-          />
-        </label>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-neutral-700">
-              레이아웃
-              <select
-                value={normalizedFormLayoutType}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, layoutType: event.target.value }))
-                }
-                className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-              >
-                {layoutOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {selectedLayout?.description && (
-              <p className="text-xs text-neutral-500">{selectedLayout.description}</p>
-            )}
-            <LayoutPreview type={normalizedFormLayoutType} />
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">
+              {editingId ? (
+                <>
+                  <span className="text-amber-700">게시판 수정</span>
+                  {editingBoard && (
+                    <span className="ml-2 text-neutral-600">· {editingBoard.name}</span>
+                  )}
+                </>
+              ) : (
+                '새 게시판 추가'
+              )}
+            </h2>
+            <p className="mt-0.5 text-xs text-neutral-500">
+              {editingId
+                ? '아래에서 항목을 수정한 뒤 저장하세요.'
+                : '필드를 입력한 뒤 "게시판 생성"을 누르세요.'}
+            </p>
           </div>
-
-          <label className="text-sm font-medium text-neutral-700">
-            표시 순서
-            <input
-              type="number"
-              value={form.orderIndex}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, orderIndex: Number(event.target.value) }))
-              }
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-            />
-          </label>
-
-          <label className="text-sm font-medium text-neutral-700">
-            상위 게시판
-            <select
-              value={form.parentId}
-              onChange={(event) => setForm((prev) => ({ ...prev, parentId: event.target.value }))}
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-            >
-              <option value="">(없음)</option>
-              {boards
-                .filter((board) => board.id !== editingId)
-                .map((board) => (
-                  <option key={board.id} value={board.id}>
-                    {board.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-        </div>
-
-        <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
-          <input
-            type="checkbox"
-            checked={form.isVisible}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, isVisible: event.target.checked }))
-            }
-            className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
-          />
-          메뉴에 표시
-        </label>
-
-        <div className="flex items-center justify-end gap-3">
           {editingId && (
             <button
               type="button"
@@ -354,109 +281,252 @@ export default function AdminBoardsClient() {
                 setEditingId(null);
                 setForm(defaultForm);
               }}
-              className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
+              className="rounded-full border border-neutral-200 px-4 py-2 text-sm transition hover:border-neutral-900 hover:text-neutral-900"
               disabled={saving}
             >
-              취소
+              취소하고 새로 만들기
             </button>
           )}
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-full bg-neutral-900 px-6 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
-          >
-            {saving ? '저장 중...' : editingId ? '게시판 수정' : '게시판 생성'}
-          </button>
         </div>
-      </form>
 
-      <section className="rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-sm">
-        <form
-          className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setKeyword(keyword.trim());
-          }}
-        >
-          <input
-            type="text"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="이름 또는 슬러그 검색"
-            className="w-full rounded-2xl border border-neutral-200 px-4 py-2 text-sm focus:border-neutral-900 focus:outline-none md:max-w-sm"
-          />
-          <p className="text-sm text-neutral-500">
-            총{' '}
-            <span className="font-semibold text-neutral-900">
-              {filteredBoards.length.toLocaleString()}
-            </span>{' '}
-            개의 게시판
-          </p>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <section className="space-y-4">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
+              기본 정보
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block text-sm font-medium text-neutral-700">
+                게시판 이름
+                <input
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                  placeholder="예: 공지사항"
+                />
+              </label>
+              <label className="block text-sm font-medium text-neutral-700">
+                슬러그 (URL 경로)
+                <input
+                  value={form.slug}
+                  onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                  placeholder="예: notice"
+                />
+              </label>
+            </div>
+            <label className="block text-sm font-medium text-neutral-700">
+              설명
+              <textarea
+                value={form.description}
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                className="mt-1.5 min-h-[100px] w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                placeholder="게시판 소개 문구"
+              />
+            </label>
+          </section>
+
+          <section className="space-y-4">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
+              레이아웃 및 순서
+            </p>
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-neutral-700">
+                  레이아웃
+                </label>
+                <select
+                  value={normalizedFormLayoutType}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, layoutType: event.target.value }))
+                  }
+                  className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                >
+                  {layoutOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {selectedLayout?.description && (
+                  <p className="text-xs text-neutral-500">{selectedLayout.description}</p>
+                )}
+                <LayoutPreview type={normalizedFormLayoutType} />
+              </div>
+              <label className="block text-sm font-medium text-neutral-700">
+                표시 순서
+                <input
+                  type="number"
+                  min={0}
+                  value={form.orderIndex}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, orderIndex: Number(event.target.value) }))
+                  }
+                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                />
+              </label>
+              <label className="block text-sm font-medium text-neutral-700">
+                상위 게시판
+                <select
+                  value={form.parentId}
+                  onChange={(event) => setForm((prev) => ({ ...prev, parentId: event.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-neutral-900 focus:border-neutral-900 focus:outline-none"
+                >
+                  <option value="">(없음)</option>
+                  {boards
+                    .filter((board) => board.id !== editingId)
+                    .map((board) => (
+                      <option key={board.id} value={board.id}>
+                        {board.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
+              표시 설정
+            </p>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 px-4 py-3 transition hover:border-neutral-300">
+              <input
+                type="checkbox"
+                checked={form.isVisible}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, isVisible: event.target.checked }))
+                }
+                className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
+              />
+              <span className="text-sm font-medium text-neutral-700">메뉴에 표시</span>
+              <span className="text-xs text-neutral-500">체크 해제 시 목록에서 숨깁니다.</span>
+            </label>
+          </section>
+
+          <div className="flex items-center justify-end gap-3 border-t border-neutral-100 pt-6">
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm(defaultForm);
+                }}
+                className="rounded-full border border-neutral-200 px-4 py-2 text-sm transition hover:border-neutral-900 hover:text-neutral-900"
+                disabled={saving}
+              >
+                취소
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {saving ? '저장 중...' : editingId ? '수정 저장' : '게시판 생성'}
+            </button>
+          </div>
         </form>
+      </div>
+
+      <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold text-neutral-900">게시판 목록</h2>
+          <form
+            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setKeyword(keyword.trim());
+            }}
+          >
+            <input
+              type="text"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="이름 또는 슬러그 검색"
+              className="w-full rounded-xl border border-neutral-200 px-4 py-2 text-sm text-neutral-900 focus:border-neutral-900 focus:outline-none sm:w-56"
+            />
+            <p className="text-sm text-neutral-500">
+              총 <span className="font-semibold text-neutral-900">{filteredBoards.length.toLocaleString()}</span>개
+            </p>
+          </form>
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-10">
             <LoadingSpinner label="게시판을 불러오는 중입니다..." />
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-3xl border border-neutral-100">
-            <table className="min-w-full divide-y divide-neutral-100 text-sm">
-              <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">이름</th>
-                  <th className="px-4 py-3 text-left">슬러그</th>
-                  <th className="px-4 py-3 text-left">레이아웃</th>
-                  <th className="px-4 py-3 text-left">순서</th>
-                  <th className="px-4 py-3 text-left">상위</th>
-                  <th className="px-4 py-3 text-left">표시</th>
-                  <th className="px-4 py-3 text-left">액션</th>
+          <div className="overflow-x-auto rounded-2xl border border-neutral-200">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  <th className="px-4 py-3">이름</th>
+                  <th className="px-4 py-3">슬러그</th>
+                  <th className="px-4 py-3">레이아웃</th>
+                  <th className="px-4 py-3">순서</th>
+                  <th className="px-4 py-3">상위</th>
+                  <th className="px-4 py-3">표시</th>
+                  <th className="px-4 py-3">액션</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 bg-white/80">
-                {filteredBoards.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-3 font-semibold text-neutral-900">{item.name}</td>
-                    <td className="px-4 py-3 text-neutral-600">/{item.slug}</td>
-                    <td className="px-4 py-3 text-neutral-600">
-                      {getLayoutLabel(item.layoutType)}
-                    </td>
-                    <td className="px-4 py-3 text-neutral-600">{item.orderIndex}</td>
-                    <td className="px-4 py-3 text-neutral-600">{item.parentName ?? '-'}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                          item.isVisible
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-neutral-100 text-neutral-500'
-                        }`}
-                      >
-                        {item.isVisible ? '표시' : '숨김'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(item)}
-                          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
+              <tbody className="divide-y divide-neutral-100 bg-white">
+                {filteredBoards.map((item) => {
+                  const isEditing = item.id === editingId;
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`transition ${
+                        isEditing
+                          ? 'bg-amber-50/50 ring-1 ring-amber-200 ring-inset'
+                          : 'hover:bg-neutral-50/80'
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-semibold text-neutral-900">{item.name}</td>
+                      <td className="px-4 py-3 text-neutral-600">/{item.slug}</td>
+                      <td className="px-4 py-3 text-neutral-600">
+                        {getLayoutLabel(item.layoutType)}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-600">{item.orderIndex}</td>
+                      <td className="px-4 py-3 text-neutral-600">{item.parentName ?? '-'}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            item.isVisible
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-neutral-100 text-neutral-500'
+                          }`}
                         >
-                          수정
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item)}
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs text-red-600 hover:border-red-400 hover:text-red-700"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {item.isVisible ? '표시' : '숨김'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(item)}
+                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                              isEditing
+                                ? 'border-amber-400 bg-amber-100 text-amber-800'
+                                : 'border-neutral-200 text-neutral-700 hover:border-neutral-900 hover:text-neutral-900'
+                            }`}
+                          >
+                            {isEditing ? '수정 중' : '수정'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item)}
+                            className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {filteredBoards.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-neutral-500">
-                      조건에 맞는 게시판이 없습니다.
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-neutral-500">
+                      조건에 맞는 게시판이 없습니다. 위에서 새 게시판을 추가해 보세요.
                     </td>
                   </tr>
                 )}

@@ -16,13 +16,14 @@ export default function MediaBoard({ board, articles }) {
         return (
           <article
             key={article.id}
-            className="space-y-3 rounded-3xl border border-neutral-100 bg-white/90 p-4 shadow-sm"
+            className="space-y-3 rounded-3xl border p-4 shadow-sm bg-[var(--board-bg)]"
+            style={{ borderColor: 'var(--board-border)' }}
           >
             <Link
               href={`/boards/${slug}/${article.id}`}
               className="group relative block overflow-hidden rounded-2xl"
             >
-              <div className="aspect-video w-full bg-neutral-200">
+              <div className="aspect-video w-full bg-[var(--board-bg-secondary)]">
                 <img src={image} alt={article.title} className="h-full w-full object-cover" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
@@ -32,17 +33,18 @@ export default function MediaBoard({ board, articles }) {
               </div>
             </Link>
             <div className="space-y-1 px-1">
-              <p className="text-xs uppercase tracking-[0.3em] text-neutral-400">
+              <p className="text-xs uppercase tracking-[0.3em] font-medium" style={{ color: 'var(--board-text-secondary)' }}>
                 {article.category || '미디어'}
               </p>
               <Link
                 href={`/boards/${slug}/${article.id}`}
-                className="text-lg font-semibold text-neutral-900 hover:underline"
+                className="text-lg font-semibold hover:opacity-80"
+                style={{ color: 'var(--board-text)' }}
               >
                 {article.title}
               </Link>
-              <p className="text-sm text-neutral-600 line-clamp-2">{article.excerpt}</p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-sm line-clamp-2" style={{ color: 'var(--board-text-secondary)' }}>{article.excerpt}</p>
+              <p className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>
                 {formatKoreanDate(article.createdAt)} · {article.writer}
               </p>
             </div>

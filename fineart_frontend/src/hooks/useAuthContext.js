@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 
 const defaultValue = {
@@ -20,32 +20,31 @@ let globalListeners = new Set();
 let supabaseSubscription = null;
 
 const updateGlobalState = (newState) => {
-  const changed = 
+  const changed =
     globalAuthState.isAuthenticated !== newState.isAuthenticated ||
     globalAuthState.email !== newState.email ||
     globalAuthState.role !== newState.role;
-  
+
   globalAuthState = newState;
-  
+
   if (changed) {
-    console.log('[useAuthContext] State changed:', newState);
-    
-    // Broadcast event
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('fineart:auth-changed'));
     }
-    
-    // Notify listeners
-    globalListeners.forEach(listener => {
+    globalListeners.forEach((listener) => {
       try {
         listener(newState);
-      } catch (error) {
-        console.error('[useAuthContext] Listener error:', error);
+      } catch (err) {
+        console.error('[useAuthContext] Listener error:', err);
       }
     });
   }
 };
 
+/**
+ * 세션 → { isAuthenticated, role, name, email, token } 변환.
+ * 예외 없이 동작하도록 내부에서 모두 처리. 관리자/일반 사용자 동일 적용.
+ */
 const buildSnapshot = async (session) => {
   if (!session?.user) {
     return defaultValue;
@@ -53,31 +52,51 @@ const buildSnapshot = async (session) => {
 
   const user = session.user;
   const profile = user.user_metadata || {};
-  
-  // Get role from user metadata
-  let role = normalizeRole(profile?.role || 'user');
-  
-  // Try to get role from profiles table if not in metadata
-  if (!role || role === 'user') {
-    try {
-      const supabase = createClient();
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileData?.role) {
-        role = normalizeRole(profileData.role);
+
+  // 역할: user_metadata 기준 (가입 시 선택한 일반사용자/관리자)
+  let role = normalizeRole(profile?.role || 'user') || 'user';
+
+  // profiles 테이블에서 역할 보강 (실패해도 metadata 유지)
+  try {
+    const supabase = createClient();
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!profileError && profileData?.role) {
+      const fromDb = normalizeRole(profileData.role);
+      if (fromDb) {
+        role = fromDb;
       }
-    } catch (error) {
-      // Ignore - use metadata role
     }
+  } catch (_) {
+    // 무시: metadata 역할 유지
   }
-  
+
+  const finalRole = role === 'admin' ? 'admin' : 'user';
+
   return {
     isAuthenticated: true,
-    role,
+    role: finalRole,
+    name: profile?.name || profile?.nickname || user.email?.split('@')[0] || null,
+    email: user.email || null,
+    token: session.access_token || null,
+  };
+};
+
+/**
+ * session만으로 최소 스냅샷 생성 (buildSnapshot 실패 시 대체용). 예외 없음.
+ */
+const snapshotFromSessionOnly = (session) => {
+  if (!session?.user) return defaultValue;
+  const user = session.user;
+  const profile = user.user_metadata || {};
+  const role = normalizeRole(profile?.role || 'user') || 'user';
+  return {
+    isAuthenticated: true,
+    role: role === 'admin' ? 'admin' : 'user',
     name: profile?.name || profile?.nickname || user.email?.split('@')[0] || null,
     email: user.email || null,
     token: session.access_token || null,
@@ -88,82 +107,79 @@ const checkSession = async () => {
   try {
     const supabase = createClient();
     const { data: { session }, error } = await supabase.auth.getSession();
-    
+
     if (error) {
-      console.error('[useAuthContext] Session error:', error);
       updateGlobalState(defaultValue);
       return;
     }
-    
+
     if (session) {
-      const snapshot = await buildSnapshot(session);
-      updateGlobalState(snapshot);
+      try {
+        const snapshot = await buildSnapshot(session);
+        updateGlobalState(snapshot);
+      } catch (_) {
+        updateGlobalState(snapshotFromSessionOnly(session));
+      }
     } else {
       updateGlobalState(defaultValue);
     }
-  } catch (error) {
-    console.error('[useAuthContext] Check session error:', error);
+  } catch (_) {
     updateGlobalState(defaultValue);
   }
 };
 
-// Initialize Supabase listener once
 const initSupabaseListener = () => {
   if (typeof window === 'undefined' || supabaseSubscription) return;
-  
+
   try {
     const supabase = createClient();
-    
-    supabaseSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[useAuthContext] Auth state changed:', event, session?.user?.email);
-      
-      if (session) {
-        const snapshot = await buildSnapshot(session);
-        updateGlobalState(snapshot);
-      } else {
-        updateGlobalState(defaultValue);
+
+    supabaseSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      try {
+        if (session) {
+          buildSnapshot(session).then(updateGlobalState).catch(() => {
+            updateGlobalState(snapshotFromSessionOnly(session));
+          });
+        } else {
+          updateGlobalState(defaultValue);
+        }
+      } catch (_) {
+        if (session) {
+          updateGlobalState(snapshotFromSessionOnly(session));
+        } else {
+          updateGlobalState(defaultValue);
+        }
       }
     });
-    
-    // Initial check
-    checkSession();
-  } catch (error) {
-    console.error('[useAuthContext] Failed to init listener:', error);
+
+    window.addEventListener('fineart:auth-changed', () => {
+      checkSession();
+    });
+
+    // 초기 세션 복원: 스토리지에서 읽을 수 있도록 다음 틱에 실행
+    setTimeout(() => {
+      checkSession();
+    }, 0);
+  } catch (err) {
+    console.error('[useAuthContext] Init failed:', err);
   }
 };
 
-// Initialize on module load
 if (typeof window !== 'undefined') {
   initSupabaseListener();
 }
 
 export default function useAuthContext() {
   const [state, setState] = useState(globalAuthState);
-  
+
   useEffect(() => {
-    // Subscribe to global state changes
-    const listener = (newState) => {
-      setState(newState);
-    };
-    
+    const listener = (newState) => setState(newState);
     globalListeners.add(listener);
-    
-    // Force check on mount
     checkSession();
-    
     return () => {
       globalListeners.delete(listener);
     };
   }, []);
-  
-  // Also check session periodically to catch any missed updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkSession();
-    }, 2000); // Check every 2 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
-  
+
   return state;
 }

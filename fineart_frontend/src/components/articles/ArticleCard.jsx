@@ -26,9 +26,15 @@ export default function ArticleCard({ article }) {
   const thumbnail = article.thumbnailUrl || article.imageUrl || article.images?.[1];
 
   return (
-    <article className="flex flex-col gap-4 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg">
+    <article
+      className="flex flex-col gap-4 rounded-3xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+      style={{ borderColor: 'var(--board-border)' }}
+    >
       {thumbnail && (
-        <div className="relative h-48 overflow-hidden rounded-2xl bg-neutral-100">
+        <div
+          className="relative h-48 overflow-hidden rounded-2xl"
+          style={{ backgroundColor: 'var(--board-bg-secondary)' }}
+        >
           <img
             src={thumbnail}
             alt={article.title}
@@ -37,19 +43,36 @@ export default function ArticleCard({ article }) {
           />
         </div>
       )}
-      <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-neutral-400">
+      <div
+        className="flex items-center justify-between text-xs uppercase tracking-[0.3em]"
+        style={{ color: 'var(--board-text-secondary)' }}
+      >
         <span>{article.author ?? 'FineArt'}</span>
         <span>{formatDate(article.createdAt)}</span>
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-neutral-900">{article.title}</h2>
-        <p className="text-sm text-neutral-600">{buildExcerpt(article.content)}</p>
+        <h2 className="text-2xl font-semibold" style={{ color: 'var(--board-text)' }}>
+          {article.title}
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+          {buildExcerpt(article.content)}
+        </p>
       </div>
-      <div className="flex items-center justify-between text-xs text-neutral-500">
-        <span className="rounded-full border border-neutral-200 px-3 py-1 text-[11px] uppercase tracking-widest">
+      <div
+        className="flex items-center justify-between text-xs"
+        style={{ color: 'var(--board-text-secondary)' }}
+      >
+        <span
+          className="rounded-full border px-3 py-1 text-[11px] uppercase tracking-widest"
+          style={{ borderColor: 'var(--board-border)' }}
+        >
           {article.category ?? 'article'}
         </span>
-        <Link href={`/articles/${article.id}`} className="text-primary underline-offset-4 hover:underline">
+        <Link
+          href={`/articles/${article.id}`}
+          className="underline-offset-4 hover:underline"
+          style={{ color: 'var(--primary)' }}
+        >
           자세히 보기
         </Link>
       </div>

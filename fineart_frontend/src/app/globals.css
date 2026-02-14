@@ -5,6 +5,16 @@
   --foreground: #1f1f1f;
   --primary: #e46f4c;
   --secondary: #0f172a;
+  /* 한신아트 게시판 디자인 (hansinart.co.kr) */
+  --board-bg: #ffffff;
+  --board-bg-secondary: #f5f5f5;
+  --board-text: #333333;
+  --board-text-secondary: #666666;
+  --board-border: #eeeeee;
+  --board-row-hover: #f8f9fa;
+  --board-notice-bg: #fef2f0;
+  --board-notice-bg-hover: #fde8e5;
+  --board-notice-badge: #e46f4c;
 }
 
 @theme inline {

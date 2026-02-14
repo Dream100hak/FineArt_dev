@@ -67,27 +67,53 @@ export default async function ArtworksPage() {
   const { artworks, isFallback } = await loadArtworks();
 
   return (
-    <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <header className="space-y-2">
-        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Collection</p>
-        <h1 className="text-4xl font-semibold">작품 라이브러리</h1>
-        <p className="text-neutral-600">시장 데이터 기반으로 작품 정보와 실제 거래 현황을 확인하세요.</p>
+    <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
+      <header
+        className="space-y-3 rounded-3xl border p-6 shadow-sm"
+        style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+      >
+        <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--board-text-secondary)' }}>
+          Collection
+        </p>
+        <h1 className="text-4xl font-bold" style={{ color: 'var(--board-text)' }}>
+          작품 라이브러리
+        </h1>
+        <p style={{ color: 'var(--board-text-secondary)' }}>
+          시장 데이터 기반으로 작품 정보와 실제 거래 현황을 확인하세요.
+        </p>
         {isFallback && (
-          <p className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-800">{SERVER_OFFLINE_MESSAGE}</p>
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+            {SERVER_OFFLINE_MESSAGE}
+          </p>
         )}
       </header>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        {artworks.map((artwork) => (
-          <article key={artwork.id} className="rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
-            <p className="text-xs uppercase text-neutral-400">{artwork.artistName ?? 'FineArt Artist'}</p>
-            <h2 className="mt-3 text-2xl font-semibold">{artwork.title}</h2>
-            <p className="mt-2 text-sm text-neutral-500">
-              {formatDate(artwork.createdAt)} · {artwork.status ?? 'Status TBD'}
-            </p>
-            <p className="mt-4 text-base font-semibold text-neutral-900">{formatPrice(artwork.price)}</p>
-          </article>
-        ))}
+      <section
+        className="rounded-3xl border p-6 shadow-sm"
+        style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+      >
+        <div className="grid gap-5 md:grid-cols-3">
+          {artworks.map((artwork) => (
+            <article
+              key={artwork.id}
+              className="rounded-3xl border bg-white p-6 shadow-sm"
+              style={{ borderColor: 'var(--board-border)' }}
+            >
+              <p className="text-xs uppercase" style={{ color: 'var(--board-text-secondary)' }}>
+                {artwork.artistName ?? 'FineArt Artist'}
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold" style={{ color: 'var(--board-text)' }}>
+                {artwork.title}
+              </h2>
+              <p className="mt-2 text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+                {formatDate(artwork.createdAt)} · {artwork.status ?? 'Status TBD'}
+              </p>
+              <p className="mt-4 text-base font-semibold" style={{ color: 'var(--board-text)' }}>
+                {formatPrice(artwork.price)}
+              </p>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   );

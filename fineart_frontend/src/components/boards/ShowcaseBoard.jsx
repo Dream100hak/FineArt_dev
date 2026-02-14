@@ -42,9 +42,10 @@ export default function ShowcaseBoard({ board, articles }) {
           <Link
             key={article.id}
             href={`/boards/${slug}/${article.id}`}
-            className="group block overflow-hidden rounded-3xl border border-neutral-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            className="group block overflow-hidden rounded-3xl border shadow-sm transition hover:-translate-y-1 hover:shadow-lg bg-[var(--board-bg)]"
+            style={{ borderColor: 'var(--board-border)' }}
           >
-            <div className="aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+            <div className="aspect-[4/3] w-full overflow-hidden bg-[var(--board-bg-secondary)]">
               <img
                 src={image}
                 alt={article.title}
@@ -53,11 +54,11 @@ export default function ShowcaseBoard({ board, articles }) {
               />
             </div>
             <div className="space-y-2 px-5 pb-5 pt-4">
-              <p className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">
+              <p className="text-[11px] uppercase tracking-[0.25em] font-medium" style={{ color: 'var(--board-text-secondary)' }}>
                 {resolveCategory(article.category)}
               </p>
-              <h3 className="text-xl font-semibold text-neutral-900 line-clamp-2">{article.title}</h3>
-              <div className="flex items-center justify-between text-xs text-neutral-500">
+              <h3 className="text-xl font-semibold line-clamp-2" style={{ color: 'var(--board-text)' }}>{article.title}</h3>
+              <div className="flex items-center justify-between text-xs" style={{ color: 'var(--board-text-secondary)' }}>
                 <span>
                   {article.writer ?? 'FineArt'} · {formatKoreanDate(article.createdAt)}
                 </span>

@@ -1,0 +1,125 @@
+{
+  "designSystem": {
+    "metadata": {
+      "source": "한신입시미술학원 (hansinart.co.kr)",
+      "type": "Visual Design System Extraction"
+    },
+    "globalTokens": {
+      "colors": {
+        "surfaces": {
+          "primaryBg": "#FFFFFF",
+          "secondaryBg": "#F5F5F5",
+          "darkBg": "#000000"
+        },
+        "content": {
+          "primaryText": "#333333",
+          "secondaryText": "#666666",
+          "inverseText": "#FFFFFF"
+        },
+        "borders": {
+          "lightDivider": "#EEEEEE"
+        }
+      },
+      "typography": {
+        "fontFamily": "sans-serif",
+        "weights": {
+          "regular": 400,
+          "medium": 500,
+          "bold": 700
+        }
+      }
+    },
+    "componentStyles": {
+      "layoutStructure": {
+        "globalHeader": {
+          "surfaceColor": "#000000",
+          "textColor": "#FFFFFF",
+          "elements": {
+            "navigationLink": {
+              "defaultState": {
+                "color": "#FFFFFF",
+                "textDecoration": "none",
+                "fontWeight": "400"
+              },
+              "interactionStates": {
+                "hover": {
+                  "opacity": "0.8"
+                }
+              }
+            }
+          }
+        },
+        "mainContentArea": {
+          "surfaceColor": "#FFFFFF"
+        }
+      },
+      "heroSection": {
+        "bannerContainer": {
+          "backgroundTreatment": "image-overlay",
+          "overlayStyle": "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%)",
+          "contentAlignment": "center"
+        },
+        "heroTitle": {
+          "textColor": "#FFFFFF",
+          "typography": {
+            "weight": "700",
+            "sizeScale": "xx-large"
+          }
+        }
+      },
+      "dataDisplay": {
+        "tableComponent": {
+          "containerStyle": {
+            "surfaceColor": "#FFFFFF",
+            "borderTreatment": "none"
+          },
+          "headerRow": {
+            "surfaceColor": "#F5F5F5",
+            "textColor": "#666666",
+            "typography": {
+              "weight": "500",
+              "sizeScale": "small"
+            },
+            "borderTreatment": {
+              "borderBottom": "1px solid #EEEEEE"
+            },
+            "cellPadding": "12px 16px"
+          },
+          "dataRows": {
+            "defaultState": {
+              "surfaceColor": "#FFFFFF",
+              "textColor": "#333333",
+              "borderTreatment": {
+                "borderBottom": "1px solid #EEEEEE"
+              }
+            },
+            "interactionStates": {
+              "hoverSurface": "#F8F9FA"
+            },
+            "typography": {
+              "weight": "400",
+              "sizeScale": "medium"
+            },
+            "cellPadding": "16px"
+          },
+          "specialElements": {
+            "noticeBadge": {
+              "textColor": "#333333",
+              "surfaceColor": "transparent",
+              "typography": {
+                "weight": "500"
+              },
+              "visualTreatment": "plain-text-label"
+            }
+          }
+        }
+      }
+    },
+    "board": {
+      "pageTitle": { "textColor": "#333333", "typography": { "weight": "700" } },
+      "sectionLabel": { "textColor": "#666666", "typography": { "weight": "500", "sizeScale": "small" } },
+      "sidebar": { "surfaceColor": "#FFFFFF", "borderColor": "#EEEEEE" },
+      "listTable": "dataDisplay.tableComponent"
+    }
+  }
+}

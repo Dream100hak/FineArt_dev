@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -214,28 +214,37 @@ export default function SalesClient() {
   );
 
   return (
-    <main className="bg-white text-neutral-900">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-6 py-16">
-        <header className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">FineArt Sales & Rental</p>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-4xl font-semibold leading-tight md:text-5xl">판매 · 렌탈 컬렉션</h1>
-              <p className="mt-3 max-w-2xl text-sm text-neutral-500">
-                원하는 작품을 빠르게 찾아보세요. 테마, 사이즈, 재질, 가격 그리고 렌탈 가능 여부까지 한 번에 비교할 수 있습니다.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="inline-flex items-center gap-2 self-start rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
-            >
-              <FiRefreshCcw /> 초기화
-            </button>
+    <main className="min-h-screen">
+      <section className="screen-padding section mx-auto flex w-full max-w-7xl flex-col gap-8 py-10">
+        <header
+          className="flex flex-col gap-4 rounded-3xl border p-6 shadow-sm md:flex-row md:items-end md:justify-between"
+          style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+        >
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--board-text-secondary)' }}>
+              FineArt Sales & Rental
+            </p>
+            <h1 className="text-4xl font-bold leading-tight md:text-5xl" style={{ color: 'var(--board-text)' }}>
+              판매 · 렌탈 컬렉션
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+              원하는 작품을 빠르게 찾아보세요. 테마, 사이즈, 재질, 가격 그리고 렌탈 가능 여부까지 한 번에 비교할 수 있습니다.
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="inline-flex items-center gap-2 self-start rounded-full border px-4 py-2 text-sm transition hover:opacity-90"
+            style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
+          >
+            <FiRefreshCcw /> 초기화
+          </button>
         </header>
 
-        <section className="space-y-6 rounded-[32px] border border-neutral-200 bg-neutral-50/70 p-6 shadow-sm">
+        <section
+          className="space-y-6 rounded-3xl border p-6 shadow-sm"
+          style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
+        >
           <div className="flex flex-wrap gap-2">
             {THEMES.map((theme) => (
               <FilterPill key={theme} label={theme} active={(filters.theme || '전체') === theme} onClick={() => handleThemeClick(theme)} />
@@ -304,8 +313,12 @@ export default function SalesClient() {
         <section className="space-y-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">Result</p>
-              <h2 className="text-2xl font-semibold text-neutral-900">총 {total.toLocaleString()}점</h2>
+              <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--board-text-secondary)' }}>
+                Result
+              </p>
+              <h2 className="text-2xl font-semibold" style={{ color: 'var(--board-text)' }}>
+                총 {total.toLocaleString()}점
+              </h2>
             </div>
             {error && (
               <p className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-700">
@@ -367,7 +380,10 @@ export default function SalesClient() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[32px] border border-dashed border-neutral-300 bg-neutral-50 p-16 text-center text-neutral-500">
+            <div
+              className="rounded-3xl border border-dashed p-16 text-center text-sm"
+              style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
+            >
               조건에 맞는 작품이 없습니다. 필터를 조정해보세요.
             </div>
           )}

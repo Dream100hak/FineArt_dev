@@ -2,7 +2,24 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### 1. 환경 변수 설정 (Supabase 사용 시 필수)
+
+프로젝트 루트에 `.env.local` 파일을 만들고 아래 변수를 넣으세요.  
+(클론한 PC에서는 `.env.local`이 없으므로 직접 생성해야 합니다.)
+
+```bash
+# .env.local.example 을 복사한 뒤 값만 채우면 됩니다.
+# cp .env.local.example .env.local
+```
+
+| 변수명 | 설명 | 확인 위치 |
+|--------|------|-----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL | Supabase 대시보드 → Project Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 익명(공개) API 키 | 같은 화면 → Project API keys → `anon` `public` |
+
+Supabase 프로젝트가 없다면 [Supabase](https://supabase.com)에서 프로젝트를 만든 뒤, DB 스키마는 `supabase_schema.sql` 등 프로젝트 내 SQL 파일을 참고하세요.
+
+### 2. 개발 서버 실행
 
 ```bash
 npm run dev
