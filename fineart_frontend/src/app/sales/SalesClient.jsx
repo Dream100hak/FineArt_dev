@@ -16,6 +16,9 @@ const PRICE_BUCKETS = [
 ];
 const PAGE_SIZE = 9;
 
+const DEFAULT_ARTWORK_IMAGE =
+  'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1600&q=80';
+
 const STATUS_BADGES = {
   ForSale: { label: '\ud310\ub9e4\uc911', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   Sold: { label: '\ud310\ub9e4\uc644\ub8cc', className: 'bg-neutral-100 text-neutral-500 border-neutral-200' },
@@ -344,8 +347,8 @@ export default function SalesClient() {
                   <article className="flex h-full flex-col rounded-[32px] border border-neutral-200 bg-white shadow-sm transition group-hover:-translate-y-1 group-hover:shadow-xl">
                     <div className="relative overflow-hidden rounded-[28px]">
                       <img
-                        src={artwork.imageUrl}
-                        alt={artwork.title}
+                        src={artwork.imageUrl || DEFAULT_ARTWORK_IMAGE}
+                        alt={artwork.title || '작품'}
                         className="w-full h-auto transition duration-700 group-hover:scale-[1.03]"
                         loading="lazy"
                       />

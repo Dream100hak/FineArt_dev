@@ -1,4 +1,4 @@
-﻿
+
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -76,13 +76,14 @@ const SIZE_OPTIONS = ['10호 미만', '10호대', '20호대', '30호대', '50호
 const THEME_OPTIONS = ['인물', '풍경', '추상', '동물', '도시', '자연', '개념', '기타'];
 const COUNTRY_OPTIONS = ['대한민국', '미국', '영국', '프랑스', '일본', '중국', '독일', '기타'];
 const EXHIBITION_CATEGORIES = [
-  { value: 'Group', label: '그룹' },
-  { value: 'Solo', label: '개인전' },
-  { value: 'Digital', label: '디지털' },
-  { value: 'Installation', label: '설치' },
-  { value: 'Media', label: '미디어' },
-  { value: 'Concept', label: '개념' },
-  { value: 'Other', label: '기타' },
+  // value 는 Supabase 스키마의 CHECK 제약 (solo, group, digital, installation, media, concept, other) 와 일치해야 함
+  { value: 'group', label: '그룹' },
+  { value: 'solo', label: '개인전' },
+  { value: 'digital', label: '디지털' },
+  { value: 'installation', label: '설치' },
+  { value: 'media', label: '미디어' },
+  { value: 'concept', label: '개념' },
+  { value: 'other', label: '기타' },
 ];
 
 const unwrapList = (res) => res?.items || res || [];
@@ -101,18 +102,18 @@ const normalizeArtwork = (item) => ({
   status: item?.status || item?.Status || 'ForSale',
   price: item?.price ?? item?.Price ?? '',
   artistName: item?.artistName || item?.artist || item?.Artist || '',
-  artistId: item?.artistId ?? item?.ArtistId ?? null,
+  artistId: item?.artistId ?? item?.ArtistId ?? item?.artist_id ?? null,
   artistSlug: item?.artistSlug ?? item?.ArtistSlug ?? item?.slug ?? null,
-  mainTheme: item?.mainTheme || item?.MainTheme || item?.theme || '',
+  mainTheme: item?.mainTheme || item?.MainTheme || item?.theme || item?.main_theme || '',
   material: item?.material || item?.Material || '',
-  sizeBucket: item?.sizeBucket || item?.SizeBucket || '',
+  sizeBucket: item?.sizeBucket || item?.SizeBucket || item?.size_bucket || '',
   size: item?.size || item?.Size || '',
-  widthCm: item?.widthCm ?? item?.WidthCm ?? '',
-  heightCm: item?.heightCm ?? item?.HeightCm ?? '',
-  imageUrl: item?.imageUrl || item?.ImageUrl || '',
+  widthCm: item?.widthCm ?? item?.WidthCm ?? item?.width_cm ?? '',
+  heightCm: item?.heightCm ?? item?.HeightCm ?? item?.height_cm ?? '',
+  imageUrl: item?.imageUrl || item?.ImageUrl || item?.image_url || '',
   description: item?.description || item?.Description || '',
-  isRentable: Boolean(item?.isRentable ?? item?.IsRentable),
-  rentPrice: item?.rentPrice ?? item?.RentPrice ?? '',
+  isRentable: Boolean(item?.isRentable ?? item?.IsRentable ?? item?.is_rentable),
+  rentPrice: item?.rentPrice ?? item?.RentPrice ?? item?.rent_price ?? '',
 });
 
 const toDateInputValue = (v) => {
@@ -134,13 +135,13 @@ const normalizeExhibition = (item) => ({
   title: item?.title || item?.Title || '',
   artist: item?.artist || item?.Artist || '',
   artistName: item?.artistName || item?.artist || item?.Artist || '',
-  artistId: item?.artistId ?? item?.ArtistId ?? null,
+  artistId: item?.artistId ?? item?.ArtistId ?? item?.artist_id ?? null,
   artistSlug: item?.artistSlug ?? item?.ArtistSlug ?? item?.slug ?? null,
   location: item?.location || item?.Location || '',
-  startDate: toDateInputValue(item?.startDate || item?.StartDate),
-  endDate: toDateInputValue(item?.endDate || item?.EndDate),
+  startDate: toDateInputValue(item?.startDate || item?.StartDate || item?.start_date),
+  endDate: toDateInputValue(item?.endDate || item?.EndDate || item?.end_date),
   description: item?.description || item?.Description || '',
-  imageUrl: item?.imageUrl || item?.ImageUrl || '',
+  imageUrl: item?.imageUrl || item?.ImageUrl || item?.image_url || '',
   category: item?.category || item?.Category || '',
 });
 

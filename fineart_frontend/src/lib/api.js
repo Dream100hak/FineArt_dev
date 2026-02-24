@@ -191,12 +191,39 @@ export const getArtists = async () => {
   }
 };
 
+// slug 자동 생성: 한글/공백을 URL 친화 문자열로
+const slugFromName = (name) => {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9가-힣\-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || `artist-${Date.now()}`;
+};
+
 export const createArtist = async (payload) => {
   try {
     const supabase = getSupabase();
+
+    // DB 컬럼은 snake_case (name, slug, nationality, discipline, bio, image_url)
+    const dbPayload = camelToSnake(payload);
+    // 새 작가는 id 제거 → DB가 uuid_generate_v4()로 생성
+    delete dbPayload.id;
+    delete dbPayload.created_at;
+    delete dbPayload.updated_at;
+
+    // slug NOT NULL: 비어 있으면 name 기준으로 생성
+    if (!dbPayload.slug || String(dbPayload.slug).trim() === '') {
+      dbPayload.slug = slugFromName(dbPayload.name || payload.name) || `artist-${Date.now()}`;
+    } else {
+      dbPayload.slug = String(dbPayload.slug).trim().toLowerCase().replace(/\s+/g, '-');
+    }
+
     const { data, error } = await supabase
       .from('artists')
-      .insert(payload)
+      .insert(dbPayload)
       .select()
       .single();
 
@@ -212,9 +239,21 @@ export const updateArtist = async (id, payload) => {
   
   try {
     const supabase = getSupabase();
+
+    const dbPayload = camelToSnake(payload);
+    delete dbPayload.id;
+    delete dbPayload.created_at;
+    delete dbPayload.updated_at;
+    // slug가 비어 있으면 DB에 반영하지 않음 (NOT NULL 유지)
+    if (dbPayload.slug === '' || dbPayload.slug == null) {
+      delete dbPayload.slug;
+    } else {
+      dbPayload.slug = String(dbPayload.slug).trim().toLowerCase().replace(/\s+/g, '-');
+    }
+
     const { data, error } = await supabase
       .from('artists')
-      .update(payload)
+      .update(dbPayload)
       .eq('id', normalizeId(id))
       .select()
       .single();
@@ -250,7 +289,8 @@ export const deleteArtist = async (id) => {
 export const getArtworks = async (params = {}) => {
   try {
     const supabase = getSupabase();
-    let query = supabase.from('artworks').select('*', { count: 'exact' });
+    // 작가명 표시를 위해 artists 조인 (name만)
+    let query = supabase.from('artworks').select('*, artists(name)', { count: 'exact' });
 
     // Filter by status if provided
     if (params.status) {
@@ -278,8 +318,19 @@ export const getArtworks = async (params = {}) => {
 
     if (error) throw error;
 
+    // 화면에서 imageUrl, mainTheme 등 camelCase 사용 → 변환 후 반환
+    const items = (data || []).map((row) => {
+      const item = snakeToCamel(row);
+      // 조인된 작가명: artists(name) → artistName
+      if (item.artists && typeof item.artists === 'object' && item.artists.name) {
+        item.artistName = item.artists.name;
+      }
+      delete item.artists; // UI에는 artistName만 사용
+      return item;
+    });
+
     return {
-      items: data || [],
+      items,
       total: count || 0,
       page: params.page ?? params.pageNumber ?? 1,
       size: params.size ?? params.pageSize ?? 10,
@@ -304,18 +355,52 @@ export const getArtworkById = async (id) => {
       .single();
 
     if (error) throw error;
-    return data;
+    // camelCase로 반환 (imageUrl, mainTheme 등)
+    return data ? snakeToCamel(data) : null;
   } catch (error) {
     handleSupabaseError(error, 'GET /api/artworks/:id');
   }
 };
 
+// artworks 테이블 컬럼: title, status, price, rent_price, is_rentable, artist_id, main_theme, material, size_bucket, size, width_cm, height_cm, image_url, description (+ id, created_at, updated_at)
+const sanitizeArtworkPayload = (dbPayload, isCreate) => {
+  delete dbPayload.artist_name;
+  delete dbPayload.artist_slug;
+  if (isCreate) {
+    delete dbPayload.id;
+    delete dbPayload.created_at;
+    delete dbPayload.updated_at;
+  } else {
+    delete dbPayload.id;
+    delete dbPayload.created_at;
+    delete dbPayload.updated_at;
+  }
+  // NUMERIC 컬럼: 빈 문자열/undefined → null (DB 오류 방지)
+  const numerics = ['price', 'rent_price', 'width_cm', 'height_cm'];
+  numerics.forEach((key) => {
+    const v = dbPayload[key];
+    if (v === '' || v === undefined) {
+      dbPayload[key] = null;
+    } else if (typeof v === 'number' && !Number.isFinite(v)) {
+      dbPayload[key] = null;
+    }
+  });
+  // status NOT NULL: 빈 값이면 기본값
+  if (!dbPayload.status || dbPayload.status === '') {
+    dbPayload.status = 'ForSale';
+  }
+  return dbPayload;
+};
+
 export const createArtwork = async (payload) => {
   try {
     const supabase = getSupabase();
+    const dbPayload = camelToSnake(payload);
+    sanitizeArtworkPayload(dbPayload, true);
+
     const { data, error } = await supabase
       .from('artworks')
-      .insert(payload)
+      .insert(dbPayload)
       .select()
       .single();
 
@@ -331,9 +416,12 @@ export const updateArtwork = async (id, payload) => {
   
   try {
     const supabase = getSupabase();
+    const dbPayload = camelToSnake(payload);
+    sanitizeArtworkPayload(dbPayload, false);
+
     const { data, error } = await supabase
       .from('artworks')
-      .update(payload)
+      .update(dbPayload)
       .eq('id', normalizeId(id))
       .select()
       .single();
@@ -433,9 +521,17 @@ export const getExhibitionById = async (id) => {
 export const createExhibition = async (payload) => {
   try {
     const supabase = getSupabase();
+    
+    // Convert camelCase payload to snake_case for database columns
+    const dbPayload = camelToSnake(payload);
+
+    // Remove UI-only fields that are not actual DB columns
+    delete dbPayload.artist_name;
+    delete dbPayload.artist_slug;
+
     const { data, error } = await supabase
       .from('exhibitions')
-      .insert(payload)
+      .insert(dbPayload)
       .select()
       .single();
 
@@ -451,9 +547,17 @@ export const updateExhibition = async (id, payload) => {
   
   try {
     const supabase = getSupabase();
+    
+    // Convert camelCase payload to snake_case for database columns
+    const dbPayload = camelToSnake(payload);
+
+    // Remove UI-only fields that are not actual DB columns
+    delete dbPayload.artist_name;
+    delete dbPayload.artist_slug;
+
     const { data, error } = await supabase
       .from('exhibitions')
-      .update(payload)
+      .update(dbPayload)
       .eq('id', normalizeId(id))
       .select()
       .single();

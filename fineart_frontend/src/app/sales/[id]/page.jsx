@@ -1,9 +1,12 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FiArrowLeft, FiMessageSquare, FiShoppingBag } from 'react-icons/fi';
 import { getArtworkById } from '@/lib/api';
 
 export const revalidate = 0;
+
+const DEFAULT_ARTWORK_IMAGE =
+  'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1600&q=80';
 
 const STATUS_LABELS = {
   ForSale: { label: '판매중', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -86,7 +89,12 @@ export default async function ArtworkDetailPage({ params }) {
             <FiArrowLeft /> 목록으로
           </Link>
           <div className="relative overflow-hidden rounded-[40px] border border-neutral-100 bg-neutral-50">
-            <img src={artwork.imageUrl} alt={artwork.title} className="h-full w-full object-cover" loading="lazy" />
+            <img
+            src={artwork.imageUrl || DEFAULT_ARTWORK_IMAGE}
+            alt={artwork.title || '작품'}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
           </div>
           {highlightChips.length > 0 && (
             <div className="mt-6 flex flex-wrap gap-2">
