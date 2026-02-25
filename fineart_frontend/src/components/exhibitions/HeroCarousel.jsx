@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Galaxy from '@/components/Galaxy';
 
 export default function HeroCarousel({ slides }) {
   const [index, setIndex] = useState(0);
@@ -67,63 +68,41 @@ export default function HeroCarousel({ slides }) {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     >
+      <div className="absolute inset-0">
+        <Galaxy
+          mouseInteraction={false}
+          density={1}
+          glowIntensity={0.3}
+          saturation={0}
+          hueShift={140}
+          twinkleIntensity={0.3}
+          rotationSpeed={0.1}
+          repulsionStrength={2}
+          starSpeed={0.5}
+          speed={1}
+          transparent
+          className="opacity-50"
+        />
+      </div>
       {active.image ? (
         <img
           src={active.image}
           alt={active.title ?? 'FineArt hero'}
-          className="absolute inset-0 h-full w-full object-cover opacity-85"
+          className="absolute inset-0 h-full w-full object-cover opacity-90"
           style={{ objectPosition: active.objectPosition ?? 'center center' }}
         />
       ) : null}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/45" />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col justify-between gap-12 px-6 py-24 lg:flex-row lg:items-center">
-        <div className="flex-1 space-y-6 rounded-[32px] bg-black/70 p-7 backdrop-blur-md shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-          <p className="text-xs uppercase tracking-[0.5em] text-white drop-shadow-[0_6px_16px_rgba(0,0,0,0.75)]">FineArt Curated</p>
-          <h1 className="text-5xl font-semibold leading-tight text-white drop-shadow-[0_8px_22px_rgba(0,0,0,0.8)]">
-            {active.title ?? 'FineArt Digital Gallery'}
-          </h1>
-          <p className="text-sm uppercase tracking-[0.35em] text-white drop-shadow-[0_6px_16px_rgba(0,0,0,0.75)]">
-            {active.period ?? 'Curating exhibitions · sales · rentals'}
-          </p>
-          <p className="text-base text-white drop-shadow-[0_8px_20px_rgba(0,0,0,0.75)]">
-            {active.synopsis ??
-              '작가와 컬렉터를 잇는 FineArt가 새로운 전시를 준비하고 있습니다. 컬렉션을 둘러보고 업데이트 소식을 받아보세요.'}
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href={active.cta?.href ?? '#'}
-              className="rounded-full border border-white bg-white/90 px-7 py-2.5 text-sm font-semibold text-black shadow-lg shadow-black/50 transition hover:bg-white"
-            >
-              {active.cta?.label ?? '자세히 보기'}
-            </Link>
-            {active.infoCta && (
-              <Link
-                href={active.infoCta.href}
-                className="rounded-full border border-white/60 px-7 py-2.5 text-sm font-semibold text-white shadow-lg shadow-black/40 transition hover:bg-white/10"
-              >
-                {active.infoCta.label}
-              </Link>
-            )}
-          </div>
-        </div>
-
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-[32px] border border-white/30 bg-black/65 p-6 backdrop-blur lg:w-auto shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
-          <p className="text-xs uppercase tracking-[0.4em] text-white">Info</p>
-          <div className="space-y-1 text-sm text-white">
-            {active.info?.map((item) => (
-              <p key={item}>{item}</p>
-            ))}
-          </div>
-          {active.infoCta && (
-            <Link
-              href={active.infoCta.href}
-              className="text-sm font-semibold text-white underline-offset-4 hover:underline"
-            >
-              {active.infoCta.label}
-            </Link>
-          )}
-        </div>
+      <div className="relative flex min-h-[80vh] flex-col items-center justify-center px-6 py-24 text-center">
+        <h1 className="text-5xl font-semibold leading-tight text-white drop-shadow-[0_8px_22px_rgba(0,0,0,0.8)] md:text-6xl lg:text-7xl">
+          Fine Art
+        </h1>
+        <p className="mt-4 text-xl text-white/95 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] md:text-2xl">
+          작가와 컬렉터를 이어주는 갤러리
+        </p>
+        <p className="mt-3 max-w-2xl text-sm text-white/90 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] md:text-base">
+          전시, 판매, 렌탈을 하나의 공간에서 경험하세요. 큐레이션된 작품과 새로운 아티스트를 소개합니다.
+        </p>
       </div>
 
       {slides.length > 1 && (

@@ -518,16 +518,46 @@ export const getExhibitionById = async (id) => {
   }
 };
 
+// Sanitize exhibition payload for DB (snake_case keys)
+const sanitizeExhibitionPayload = (dbPayload, isCreate) => {
+  delete dbPayload.artist_name;
+  delete dbPayload.artist_slug;
+  if (isCreate) {
+    delete dbPayload.id;
+    delete dbPayload.created_at;
+    delete dbPayload.updated_at;
+  }
+  // category: CHECK constraint allows only specific values; empty string is invalid
+  if (dbPayload.category === '' || dbPayload.category == null) {
+    dbPayload.category = null;
+  }
+  // DATE columns: empty/invalid → null; ISO string → YYYY-MM-DD for PostgreSQL DATE
+  const toDateOnly = (v) => {
+    if (v === '' || v == null) return null;
+    const s = String(v);
+    if (s.includes('T')) return s.split('T')[0];
+    return s;
+  };
+  dbPayload.start_date = toDateOnly(dbPayload.start_date);
+  dbPayload.end_date = toDateOnly(dbPayload.end_date);
+  // artist_id: empty string → null
+  if (dbPayload.artist_id === '' || dbPayload.artist_id == null) {
+    dbPayload.artist_id = null;
+  }
+  // Optional text fields: empty string → null (title is NOT NULL, leave as-is)
+  ['artist', 'host', 'participants', 'location', 'description', 'image_url'].forEach((key) => {
+    if (typeof dbPayload[key] === 'string' && dbPayload[key].trim() === '') {
+      dbPayload[key] = null;
+    }
+  });
+  return dbPayload;
+};
+
 export const createExhibition = async (payload) => {
   try {
     const supabase = getSupabase();
-    
-    // Convert camelCase payload to snake_case for database columns
-    const dbPayload = camelToSnake(payload);
-
-    // Remove UI-only fields that are not actual DB columns
-    delete dbPayload.artist_name;
-    delete dbPayload.artist_slug;
+    const dbPayload = camelToSnake({ ...payload });
+    sanitizeExhibitionPayload(dbPayload, true);
 
     const { data, error } = await supabase
       .from('exhibitions')
@@ -536,7 +566,7 @@ export const createExhibition = async (payload) => {
       .single();
 
     if (error) throw error;
-    return data;
+    return snakeToCamel(data);
   } catch (error) {
     handleSupabaseError(error, 'POST /api/exhibitions');
   }
@@ -547,13 +577,9 @@ export const updateExhibition = async (id, payload) => {
   
   try {
     const supabase = getSupabase();
-    
-    // Convert camelCase payload to snake_case for database columns
-    const dbPayload = camelToSnake(payload);
-
-    // Remove UI-only fields that are not actual DB columns
-    delete dbPayload.artist_name;
-    delete dbPayload.artist_slug;
+    const dbPayload = camelToSnake({ ...payload });
+    sanitizeExhibitionPayload(dbPayload, false);
+    delete dbPayload.id;
 
     const { data, error } = await supabase
       .from('exhibitions')
@@ -563,7 +589,7 @@ export const updateExhibition = async (id, payload) => {
       .single();
 
     if (error) throw error;
-    return data;
+    return snakeToCamel(data);
   } catch (error) {
     handleSupabaseError(error, 'PUT /api/exhibitions/:id');
   }

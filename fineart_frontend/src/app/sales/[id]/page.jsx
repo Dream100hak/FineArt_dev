@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FiArrowLeft, FiMessageSquare, FiShoppingBag } from 'react-icons/fi';
 import { getArtworkById } from '@/lib/api';
+import ArtworkImageModal from '@/components/sales/ArtworkImageModal';
 
 export const revalidate = 0;
 
@@ -88,14 +89,12 @@ export default async function ArtworkDetailPage({ params }) {
           >
             <FiArrowLeft /> 목록으로
           </Link>
-          <div className="relative overflow-hidden rounded-[40px] border border-neutral-100 bg-neutral-50">
-            <img
-            src={artwork.imageUrl || DEFAULT_ARTWORK_IMAGE}
-            alt={artwork.title || '작품'}
-            className="h-full w-full object-cover"
-            loading="lazy"
+          <ArtworkImageModal
+            imageUrl={artwork.imageUrl}
+            fallbackImage={DEFAULT_ARTWORK_IMAGE}
+            title={artwork.title}
+            description={artwork.description}
           />
-          </div>
           {highlightChips.length > 0 && (
             <div className="mt-6 flex flex-wrap gap-2">
               {highlightChips.map((chip) => (

@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import HeroCarousel from '@/components/exhibitions/HeroCarousel';
+import SalesMasonry from '@/components/SalesMasonry';
 import { getArtists, getArtworks, getBoards, getExhibitions } from '@/lib/api';
 import {
   buildHeroSlides,
   FALLBACK_EXHIBITIONS,
+  formatExhibitionPeriod,
+  getExhibitionCategoryLabel,
   normalizeExhibitionsFromPayload,
 } from '@/lib/exhibitions';
 
@@ -29,18 +32,24 @@ const formatPrice = (value) => {
   }).format(value);
 };
 
-const normalizeArtworkPreview = (item, index) => ({
-  id: item.id ?? item.Id ?? `artwork-${index}`,
-  title: item.title ?? item.Title ?? '작품 제목 미정',
-  artist: item.artistName ?? item.artist ?? item.Artist ?? '작가 정보 없음',
-  price: typeof item.price === 'number' ? item.price : null,
-  status: item.status ?? item.Status ?? 'Status',
-  imageUrl: pickImage(
-    item.imageUrl ?? item.ImageUrl ?? item.thumbnailUrl,
-    DEFAULT_ARTWORK_IMAGE,
-  ),
-  createdAt: item.createdAt ?? item.CreatedAt ?? null,
-});
+const normalizeArtworkPreview = (item, index) => {
+  const rawImage =
+    item.imageUrl ?? item.ImageUrl ?? item.image_url ?? item.thumbnailUrl ?? null;
+  const hasImage = typeof rawImage === 'string' && rawImage.trim().length > 0;
+
+  return {
+    id: item.id ?? item.Id ?? `artwork-${index}`,
+    title: item.title ?? item.Title ?? '작품 제목 미정',
+    artist: item.artistName ?? item.artist ?? item.Artist ?? (item.artists?.name ?? '작가 정보 없음'),
+    price: typeof item.price === 'number' ? item.price : null,
+    status: item.status ?? item.Status ?? 'Status',
+    imageUrl: hasImage
+      ? rawImage
+      : DEFAULT_ARTWORK_IMAGE,
+    hasRealImage: hasImage,
+    createdAt: item.createdAt ?? item.CreatedAt ?? item.created_at ?? null,
+  };
+};
 
 const normalizeArtistPreview = (item, index) => {
   const name = item.name ?? item.Name ?? '작가 이름 미정';
@@ -54,7 +63,7 @@ const normalizeArtistPreview = (item, index) => {
       item.category ??
       item.bio ??
       '작가 소개가 준비 중입니다.',
-    imageUrl: pickImage(item.imageUrl ?? item.ImageUrl, DEFAULT_ARTIST_IMAGE),
+    imageUrl: pickImage(item.imageUrl ?? item.ImageUrl ?? item.image_url, DEFAULT_ARTIST_IMAGE),
   };
 };
 
@@ -68,10 +77,10 @@ const normalizeBoardPreview = (item, index) => ({
 
 async function loadHomeData() {
   const [exhibitionResult, artworksResult, artistsResult, boardsResult] = await Promise.allSettled([
-    getExhibitions({ page: 1, size: 6 }),
-    getArtworks({ page: 1, pageSize: 6 }),
+    getExhibitions({ page: 1, size: 12 }),
+    getArtworks({ page: 1, pageSize: 30 }),
     getArtists(),
-    getBoards({ page: 1, size: 5, sort: 'order' }),
+    getBoards({ page: 1, size: 8, sort: 'order' }),
   ]);
 
   const exhibitions =
@@ -137,139 +146,167 @@ async function loadHomeData() {
 
   return {
     heroSlides: buildHeroSlides(exhibitions),
-    artworks: artworks.slice(0, 3),
-    artists: artists.slice(0, 3),
-    boards: boards.slice(0, 5),
+    exhibitions: exhibitions.slice(0, 4),
+    artworks: artworks.slice(0, 25),
+    artists: artists.slice(0, 5),
+    boards: boards.slice(0, 6),
   };
 }
 
 export const revalidate = 0;
 
+const DEFAULT_EXHIBITION_IMAGE =
+  'https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=800&q=80';
+
 export default async function Home() {
-  const { heroSlides, artworks, artists, boards } = await loadHomeData();
+  const { heroSlides, exhibitions, artworks, artists, boards } = await loadHomeData();
 
   return (
-    <main className="bg-[var(--board-bg)] text-neutral-900">
+    <main className="min-h-screen bg-[var(--board-bg)] text-neutral-900">
       <HeroCarousel slides={heroSlides} />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 py-16">
-        <section className="space-y-6">
-          <div className="flex items-center justify-between gap-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-6 py-16 md:gap-24">
+        {/* 현재 전시 */}
+        {exhibitions.length > 0 && (
+          <section className="space-y-8">
+            <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Exhibition</p>
+                <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">현재 전시</h2>
+              </div>
+              <Link
+                href="/exhibitions"
+                className="shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+              >
+                전시 일정 보기
+              </Link>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {exhibitions.map((ex) => {
+                const imgSrc = ex.imageUrl || DEFAULT_EXHIBITION_IMAGE;
+                const period = formatExhibitionPeriod(ex.startDate, ex.endDate, ex.location);
+                return (
+                  <Link
+                    key={ex.id}
+                    href={`/exhibitions/${ex.id}`}
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+                      <img
+                        src={imgSrc}
+                        alt={ex.title}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition opacity group-hover:opacity-100" />
+                      {ex.category && (
+                        <span className="absolute right-3 top-3 rounded-full border border-white/50 bg-black/40 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur">
+                          {getExhibitionCategoryLabel(ex.category)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col gap-2 p-4">
+                      <h3 className="line-clamp-2 text-base font-semibold text-neutral-900">{ex.title}</h3>
+                      <p className="text-xs text-neutral-500">{period}</p>
+                      {ex.description && (
+                        <p className="line-clamp-3 text-sm text-neutral-600">{ex.description}</p>
+                      )}
+                      <span className="mt-auto text-xs font-medium text-neutral-700 underline-offset-4 group-hover:underline">
+                        자세히 보기 →
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 인기 작품 */}
+        <section className="space-y-8">
+          <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">판매</p>
-              <h2 className="text-3xl font-semibold">지금 인기 있는 작품</h2>
+              <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Sales</p>
+              <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">지금 인기 있는 작품</h2>
             </div>
             <Link
               href="/sales"
-              className="rounded-full border border-neutral-900 px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 hover:bg-neutral-900 hover:text-white"
+              className="shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
             >
               전체 보기
             </Link>
           </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {artworks.map((artwork) => (
-              <Link
-                key={artwork.id}
-                href={`/sales/${artwork.id}`}
-                className="group relative flex h-full flex-col overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    src={artwork.imageUrl}
-                    alt={artwork.title}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <span className="absolute right-3 top-3 rounded-full border border-white/40 bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                    {artwork.status}
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col gap-2 p-5">
-                  <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">FineArt Sales</p>
-                  <h3 className="text-lg font-semibold text-neutral-900">{artwork.title}</h3>
-                  <p className="text-sm text-neutral-600">{artwork.artist}</p>
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="text-base font-semibold text-neutral-900">
-                      {formatPrice(artwork.price)}
-                    </span>
-                    <span className="text-xs text-neutral-500">자세히 보기 →</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <SalesMasonry artworks={artworks} />
         </section>
 
-        <section className="space-y-6">
-          <div className="flex items-center justify-between gap-4">
+        {/* 아티스트 */}
+        <section className="space-y-8">
+          <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">작가</p>
-              <h2 className="text-3xl font-semibold">FineArt 아티스트</h2>
+              <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Artist</p>
+              <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">FineArt 아티스트</h2>
             </div>
             <Link
               href="/artists"
-              className="rounded-full border border-neutral-900 px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 hover:bg-neutral-900 hover:text-white"
+              className="shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
             >
               더 보기
             </Link>
           </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {artists.map((artist) => (
               <Link
                 key={artist.id}
                 href={`/artists/${artist.slug ?? artist.id}`}
-                className="group overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="h-48 overflow-hidden">
+                <div className="aspect-[4/3] overflow-hidden bg-neutral-100">
                   <img
                     src={artist.displayImage ?? artist.imageUrl}
                     alt={artist.name}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                 </div>
                 <div className="space-y-2 p-5">
-                  <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Artist</p>
+                  <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">Artist</p>
                   <h3 className="text-lg font-semibold text-neutral-900">{artist.name}</h3>
-                  <p className="text-sm text-neutral-600">{artist.headline}</p>
+                  <p className="line-clamp-2 text-sm text-neutral-600">{artist.headline}</p>
                 </div>
               </Link>
             ))}
           </div>
         </section>
 
-        <section className="space-y-6">
-          <div className="flex items-center justify-between gap-4">
+        {/* 게시판 / 소식 */}
+        <section className="space-y-8">
+          <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--board-text-secondary)' }}>
-                게시판
+              <p className="text-xs font-medium uppercase tracking-[0.35em]" style={{ color: 'var(--board-text-secondary)' }}>
+                Board
               </p>
-              <h2 className="text-3xl font-semibold" style={{ color: 'var(--board-text)' }}>
-                오늘의 포스트
+              <h2 className="mt-1 text-3xl font-semibold md:text-4xl" style={{ color: 'var(--board-text)' }}>
+                소식 · 공지
               </h2>
             </div>
             <Link
               href="/boards"
-              className="rounded-full border px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 hover:opacity-90"
+              className="shrink-0 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:opacity-90"
               style={{ borderColor: 'var(--board-text)', color: 'var(--board-text)' }}
             >
               전체 게시판
             </Link>
           </div>
-
           <div
-            className="overflow-hidden rounded-3xl border shadow-sm"
+            className="overflow-hidden rounded-2xl border shadow-sm"
             style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
           >
             <div
-              className="grid grid-cols-12 px-4 py-3 text-xs uppercase tracking-[0.25em]"
+              className="grid grid-cols-12 gap-4 px-5 py-4 text-xs font-medium uppercase tracking-[0.2em]"
               style={{ backgroundColor: 'var(--board-bg-secondary)', color: 'var(--board-text-secondary)' }}
             >
-              <span className="col-span-4">게시판</span>
-              <span className="col-span-6">소개</span>
+              <span className="col-span-4 sm:col-span-3">게시판</span>
+              <span className="col-span-6 sm:col-span-7">소개</span>
               <span className="col-span-2 text-right">글 수</span>
             </div>
             <div className="divide-y divide-[var(--board-border)]">
@@ -277,12 +314,12 @@ export default async function Home() {
                 <Link
                   key={board.id}
                   href={`/boards/${board.slug}`}
-                  className="grid grid-cols-12 items-center px-4 py-4 transition hover:bg-[var(--board-row-hover)]"
+                  className="grid grid-cols-12 gap-4 px-5 py-4 transition hover:bg-[var(--board-row-hover)]"
                 >
-                  <span className="col-span-4 text-sm font-semibold" style={{ color: 'var(--board-text)' }}>
+                  <span className="col-span-4 text-sm font-semibold sm:col-span-3" style={{ color: 'var(--board-text)' }}>
                     {board.name}
                   </span>
-                  <span className="col-span-6 text-sm" style={{ color: 'var(--board-text-secondary)' }}>
+                  <span className="col-span-6 line-clamp-1 text-sm sm:col-span-7" style={{ color: 'var(--board-text-secondary)' }}>
                     {board.description}
                   </span>
                   <span className="col-span-2 text-right text-sm" style={{ color: 'var(--board-text-secondary)' }}>
@@ -291,6 +328,39 @@ export default async function Home() {
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section
+          className="rounded-3xl border px-8 py-12 text-center md:px-12 md:py-16"
+          style={{ borderColor: 'var(--board-border)', backgroundColor: 'var(--board-bg-secondary)' }}
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.4em]" style={{ color: 'var(--board-text-secondary)' }}>
+            Visit & Contact
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold md:text-3xl" style={{ color: 'var(--board-text)' }}>
+            전시와 작품을 직접 만나보세요
+          </h2>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/exhibitions"
+              className="rounded-full bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+            >
+              전시 일정 보기
+            </Link>
+            <Link
+              href="/sales"
+              className="rounded-full border-2 border-neutral-900 px-6 py-3 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-900 hover:text-white"
+            >
+              작품 보기
+            </Link>
+            <Link
+              href="/boards"
+              className="rounded-full border border-neutral-300 px-6 py-3 text-sm font-semibold text-neutral-700 transition hover:border-neutral-900 hover:text-neutral-900"
+            >
+              소식 보기
+            </Link>
           </div>
         </section>
       </div>

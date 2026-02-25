@@ -1,4 +1,4 @@
-﻿import { getArtists, getArtworks, getExhibitions } from '@/lib/api';
+import { getArtists, getArtworks, getExhibitions } from '@/lib/api';
 
 const FALLBACK_ARTISTS = [
   {

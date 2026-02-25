@@ -60,13 +60,18 @@ export function normalizeExhibition(item, index = 0) {
     artist: item.artist ?? item.Artist ?? 'FineArt Curator',
     host: item.host ?? item.Host ?? '',
     participants: item.participants ?? item.Participants ?? '',
-    startDate: toIsoString(item.startDate ?? item.StartDate),
-    endDate: toIsoString(item.endDate ?? item.EndDate),
+    startDate: toIsoString(item.startDate ?? item.StartDate ?? item.start_date),
+    endDate: toIsoString(item.endDate ?? item.EndDate ?? item.end_date),
     imageUrl:
-      item.imageUrl ?? item.ImageUrl ?? item.thumbnailUrl ?? item.coverUrl ?? DEFAULT_IMAGE,
+      item.imageUrl ??
+      item.ImageUrl ??
+      item.image_url ??
+      item.thumbnailUrl ??
+      item.coverUrl ??
+      DEFAULT_IMAGE,
     location: item.location ?? item.Location ?? 'FineArt Space',
     category,
-    createdAt: toIsoString(item.createdAt ?? item.CreatedAt) ?? new Date().toISOString(),
+    createdAt: toIsoString(item.createdAt ?? item.CreatedAt ?? item.created_at) ?? new Date().toISOString(),
   };
 }
 
@@ -154,7 +159,7 @@ export function buildHeroSlides(exhibitions) {
         period: 'Curating exhibitions · sales · rentals',
         synopsis:
           '작가와 컬렉터를 잇는 FineArt가 새로운 전시를 준비하고 있습니다. 컬렉션을 둘러보고 업데이트 소식을 받아보세요.',
-        image: DEFAULT_IMAGE,
+        image: null,
         objectPosition: 'center center',
         info: ['FineArt · Curated experience', 'Sales · Rental · Archive'],
         cta: { href: '/sales', label: '컬렉션 보기' },
