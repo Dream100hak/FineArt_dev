@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import MainWithSidebar from '@/components/MainWithSidebar';
 import TopNav from '@/components/TopNav';
 import Footer from '@/components/Footer';
 
@@ -25,7 +26,7 @@ export default function RootLayout({ children }) {
         <div className="min-h-screen text-base text-neutral-900">
           <div className="flex min-h-screen flex-col bg-[var(--board-bg)]">
             <TopNav />
-            <main className="flex-1 pt-6">{children}</main>
+            <main className="flex-1 pt-6"><MainWithSidebar>{children}</MainWithSidebar></main>
             <Footer />
           </div>
         </div>

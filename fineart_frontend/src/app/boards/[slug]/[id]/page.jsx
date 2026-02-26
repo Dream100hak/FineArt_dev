@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import BoardDetailActions from '../BoardDetailActions';
-import BoardSidebar from '@/components/BoardSidebar';
 import { getBoardArticleById, getBoardBySlug } from '@/lib/api';
 import { findFallbackArticle, getFallbackBoard } from '@/lib/boardFallbacks';
 
@@ -66,11 +65,7 @@ export default async function BoardArticleDetailPage({ params }) {
   const html = isHtmlContent(content);
 
   return (
-    <div className="min-h-screen bg-[var(--board-bg)]">
-      <div className="screen-padding mx-auto w-full max-w-screen-2xl py-6">
-        <div className="flex gap-6 lg:gap-10">
-          <BoardSidebar activeSlug={board?.slug ?? slug} />
-          <div className="flex min-w-0 flex-1 flex-col gap-6 max-w-3xl">
+    <div className="flex min-w-0 flex-1 flex-col gap-6 max-w-3xl">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 href={`/boards/${board?.slug ?? slug ?? ''}`}
@@ -128,9 +123,6 @@ export default async function BoardArticleDetailPage({ params }) {
                 />
               </div>
             </article>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import Link from 'next/link';
+import ArtistCarousel from '@/components/ArtistCarousel';
+import BoardSidebar from '@/components/BoardSidebar';
+import DomeGallery from '@/components/DomeGallery';
 import HeroCarousel from '@/components/exhibitions/HeroCarousel';
 import SalesMasonry from '@/components/SalesMasonry';
-import { getArtists, getArtworks, getBoards, getExhibitions } from '@/lib/api';
+import { getArtists, getArtworks, getExhibitions } from '@/lib/api';
 import {
   buildHeroSlides,
   FALLBACK_EXHIBITIONS,
@@ -67,20 +70,11 @@ const normalizeArtistPreview = (item, index) => {
   };
 };
 
-const normalizeBoardPreview = (item, index) => ({
-  id: item.id ?? item.Id ?? `board-${index}`,
-  name: item.name ?? item.Name ?? '게시판',
-  slug: item.slug ?? item.Slug ?? 'board',
-  description: item.description ?? item.Description ?? '게시판 소개가 준비 중입니다.',
-  articleCount: item.articleCount ?? item.articlesCount ?? item.count ?? 0,
-});
-
 async function loadHomeData() {
-  const [exhibitionResult, artworksResult, artistsResult, boardsResult] = await Promise.allSettled([
+  const [exhibitionResult, artworksResult, artistsResult] = await Promise.allSettled([
     getExhibitions({ page: 1, size: 12 }),
     getArtworks({ page: 1, pageSize: 30 }),
     getArtists(),
-    getBoards({ page: 1, size: 8, sort: 'order' }),
   ]);
 
   const exhibitions =
@@ -130,26 +124,16 @@ async function loadHomeData() {
               pick?.imageUrl ?? artist.imageUrl,
               DEFAULT_ARTIST_IMAGE,
             );
-            return { ...artist, displayImage };
+            const displayArtworkTitle = pick?.title ?? 'Untitled';
+            return { ...artist, displayImage, displayArtworkTitle };
           })
-      : [];
-
-  const boards =
-    boardsResult.status === 'fulfilled'
-      ? (Array.isArray(boardsResult.value?.items)
-          ? boardsResult.value.items
-          : Array.isArray(boardsResult.value)
-            ? boardsResult.value
-            : []
-        ).map(normalizeBoardPreview)
       : [];
 
   return {
     heroSlides: buildHeroSlides(exhibitions),
     exhibitions: exhibitions.slice(0, 4),
     artworks: artworks.slice(0, 25),
-    artists: artists.slice(0, 5),
-    boards: boards.slice(0, 6),
+    artists: artists.slice(0, 12),
   };
 }
 
@@ -159,13 +143,17 @@ const DEFAULT_EXHIBITION_IMAGE =
   'https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=800&q=80';
 
 export default async function Home() {
-  const { heroSlides, exhibitions, artworks, artists, boards } = await loadHomeData();
+  const { heroSlides, exhibitions, artworks, artists } = await loadHomeData();
 
   return (
     <main className="min-h-screen bg-[var(--board-bg)] text-neutral-900">
       <HeroCarousel slides={heroSlides} />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-6 py-16 md:gap-24">
+      <div className="screen-padding-with-sidebar w-full py-4 min-h-[calc(100vh-12rem)] bg-[var(--board-bg)]">
+        <div className="flex gap-0 min-h-full items-stretch">
+          <BoardSidebar useFixedPosition="dynamic" />
+          <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)] pl-52 max-w-[99rem]">
+            <div className="mx-auto flex w-full max-w-full flex-col gap-20 px-6 py-16 md:gap-24">
         {/* 현재 전시 */}
         {exhibitions.length > 0 && (
           <section className="space-y-8">
@@ -224,14 +212,15 @@ export default async function Home() {
 
         {/* 인기 작품 */}
         <section className="space-y-8">
-          <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
-            <div>
+          <div className="relative border-b border-neutral-200 pb-4">
+            <div className="flex flex-col items-center text-center">
               <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Sales</p>
               <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">지금 인기 있는 작품</h2>
+              <p className="mt-2 text-sm text-neutral-500">인기 있는 작품들을 둘러보고 나만의 감성을 찾아보세요</p>
             </div>
             <Link
               href="/sales"
-              className="shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+              className="absolute right-0 top-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
             >
               전체 보기
             </Link>
@@ -239,96 +228,60 @@ export default async function Home() {
           <SalesMasonry artworks={artworks} />
         </section>
 
-        {/* 아티스트 */}
+        {/* 오늘의 작품 */}
         <section className="space-y-8">
-          <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Artist</p>
-              <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">FineArt 아티스트</h2>
+          <div className="relative border-b border-neutral-200 pb-4">
+            <div className="flex flex-col items-center text-center">
+              <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Works</p>
+              <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">오늘의 작품</h2>
+              <p className="mt-2 text-sm text-neutral-500">다양한 작품들을 감상해보세요</p>
             </div>
             <Link
               href="/artists"
-              className="shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+              className="absolute right-0 top-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
             >
               더 보기
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {artists.map((artist) => (
-              <Link
-                key={artist.id}
-                href={`/artists/${artist.slug ?? artist.id}`}
-                className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="aspect-[4/3] overflow-hidden bg-neutral-100">
-                  <img
-                    src={artist.displayImage ?? artist.imageUrl}
-                    alt={artist.name}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="space-y-2 p-5">
-                  <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">Artist</p>
-                  <h3 className="text-lg font-semibold text-neutral-900">{artist.name}</h3>
-                  <p className="line-clamp-2 text-sm text-neutral-600">{artist.headline}</p>
-                </div>
-              </Link>
-            ))}
+          <div className="relative h-[720px] w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-950">
+            <DomeGallery
+              images={
+                (() => {
+                  const list = [
+                    ...artists.map((a) => ({
+                      src: a.displayImage ?? a.imageUrl,
+                      alt: a.name,
+                      href: `/artists/${a.slug ?? a.id}`,
+                    })),
+                    ...artworks.slice(0, 15).map((a) => ({
+                      src: a.imageUrl,
+                      alt: a.title,
+                      href: `/sales/${a.id}`,
+                    })),
+                  ].filter((i) => i.src);
+                  return list.length ? list : undefined;
+                })()
+              }
+              fit={0.8}
+              minRadius={1000}
+              maxVerticalRotationDeg={0}
+              segments={40}
+              dragDampening={2}
+              grayscale = {false}
+            />
           </div>
         </section>
 
-        {/* 게시판 / 소식 */}
+        {/* 작가 정보 */}
         <section className="space-y-8">
-          <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.35em]" style={{ color: 'var(--board-text-secondary)' }}>
-                Board
-              </p>
-              <h2 className="mt-1 text-3xl font-semibold md:text-4xl" style={{ color: 'var(--board-text)' }}>
-                소식 · 공지
-              </h2>
-            </div>
-            <Link
-              href="/boards"
-              className="shrink-0 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:opacity-90"
-              style={{ borderColor: 'var(--board-text)', color: 'var(--board-text)' }}
-            >
-              전체 게시판
-            </Link>
-          </div>
-          <div
-            className="overflow-hidden rounded-2xl border shadow-sm"
-            style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
-          >
-            <div
-              className="grid grid-cols-12 gap-4 px-5 py-4 text-xs font-medium uppercase tracking-[0.2em]"
-              style={{ backgroundColor: 'var(--board-bg-secondary)', color: 'var(--board-text-secondary)' }}
-            >
-              <span className="col-span-4 sm:col-span-3">게시판</span>
-              <span className="col-span-6 sm:col-span-7">소개</span>
-              <span className="col-span-2 text-right">글 수</span>
-            </div>
-            <div className="divide-y divide-[var(--board-border)]">
-              {boards.map((board) => (
-                <Link
-                  key={board.id}
-                  href={`/boards/${board.slug}`}
-                  className="grid grid-cols-12 gap-4 px-5 py-4 transition hover:bg-[var(--board-row-hover)]"
-                >
-                  <span className="col-span-4 text-sm font-semibold sm:col-span-3" style={{ color: 'var(--board-text)' }}>
-                    {board.name}
-                  </span>
-                  <span className="col-span-6 line-clamp-1 text-sm sm:col-span-7" style={{ color: 'var(--board-text-secondary)' }}>
-                    {board.description}
-                  </span>
-                  <span className="col-span-2 text-right text-sm" style={{ color: 'var(--board-text-secondary)' }}>
-                    {board.articleCount?.toLocaleString?.() ?? 0}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <ArtistCarousel
+            items={artists}
+            categoryLabel="Artist"
+            title="FineArt 작가"
+            subtitle="다양한 작가들을 만나보세요"
+            moreHref="/artists"
+            moreLabel="전체 작가 보기"
+          />
         </section>
 
         {/* CTA */}
@@ -363,6 +316,9 @@ export default async function Home() {
             </Link>
           </div>
         </section>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

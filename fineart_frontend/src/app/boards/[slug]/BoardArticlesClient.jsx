@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import BoardSidebar from '@/components/BoardSidebar';
 import { getBoardArticles } from '@/lib/api';
 import ListBoard from '@/components/boards/ListBoard';
 import MediaBoard from '@/components/boards/MediaBoard';
@@ -272,10 +271,10 @@ export default function BoardArticlesClient({ board, initialData }) {
   return (
     <div className="w-full bg-[var(--board-bg)]">
       <header
-        className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] border-b shadow-sm bg-[var(--board-bg)] py-5 px-4"
+        className="w-full border-b shadow-sm bg-[var(--board-bg)] py-5 px-4"
         style={{ borderColor: 'var(--board-border)' }}
       >
-        <div className="mx-auto w-full max-w-screen-2xl screen-padding flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-4xl font-bold" style={{ color: 'var(--board-text)' }}>
@@ -329,11 +328,8 @@ export default function BoardArticlesClient({ board, initialData }) {
         </div>
       </header>
 
-      <div className="screen-padding mx-auto w-full max-w-screen-2xl py-4 min-h-[calc(100vh-12rem)] bg-[var(--board-bg)]">
-        <div className="flex gap-0 min-h-full items-stretch">
-          <BoardSidebar activeSlug={currentBoard?.slug ?? board.slug} />
-          <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)]">
-          <section className="space-y-3 rounded-lg border p-4 bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
+      <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)]">
+        <section className="space-y-3 rounded-lg border p-4 bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
             <form
               className="flex flex-col gap-2 rounded-lg border p-3 text-sm md:flex-row md:items-center md:gap-3 bg-[var(--board-bg-secondary)]"
               style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
@@ -400,9 +396,7 @@ export default function BoardArticlesClient({ board, initialData }) {
                 </div>
               </div>
             )}
-          </section>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

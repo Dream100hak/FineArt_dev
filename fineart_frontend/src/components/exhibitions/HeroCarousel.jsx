@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Galaxy from '@/components/Galaxy';
+import StaggeredText from '@/components/StaggeredText';
 
 export default function HeroCarousel({ slides }) {
   const [index, setIndex] = useState(0);
@@ -61,6 +62,7 @@ export default function HeroCarousel({ slides }) {
 
   return (
     <section
+      id="hero-section"
       className="relative min-h-[90vh] cursor-grab select-none overflow-hidden bg-black"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -94,15 +96,42 @@ export default function HeroCarousel({ slides }) {
       ) : null}
 
       <div className="relative flex min-h-[80vh] flex-col items-center justify-center px-6 py-24 text-center">
-        <h1 className="text-5xl font-semibold leading-tight text-white drop-shadow-[0_8px_22px_rgba(0,0,0,0.8)] md:text-6xl lg:text-7xl">
-          Fine Art
-        </h1>
-        <p className="mt-4 text-xl text-white/95 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] md:text-2xl">
-          작가와 컬렉터를 이어주는 갤러리
-        </p>
-        <p className="mt-3 max-w-2xl text-sm text-white/90 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] md:text-base">
-          전시, 판매, 렌탈을 하나의 공간에서 경험하세요. 큐레이션된 작품과 새로운 아티스트를 소개합니다.
-        </p>
+        <StaggeredText
+          text="Fine Art"
+          as="h1"
+          segmentBy="words"
+          direction="top"
+          delay={100}
+          duration={0.7}
+          blur
+          staggerDirection="forward"
+          exitOnScrollOut={false}
+          className="text-5xl font-semibold leading-tight text-white drop-shadow-[0_8px_22px_rgba(0,0,0,0.8)] md:text-6xl lg:text-7xl"
+        />
+        <StaggeredText
+          text="작가와 컬렉터를 이어주는 갤러리"
+          as="p"
+          segmentBy="words"
+          direction="top"
+          delay={60}
+          duration={0.5}
+          blur
+          staggerDirection="forward"
+          exitOnScrollOut={false}
+          className="mt-4 text-xl text-white/95 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] md:text-2xl"
+        />
+        <StaggeredText
+          text="전시, 판매, 렌탈을 하나의 공간에서 경험하세요. 큐레이션된 작품과 새로운 아티스트를 소개합니다."
+          as="p"
+          segmentBy="words"
+          direction="top"
+          delay={40}
+          duration={0.5}
+          blur
+          staggerDirection="forward"
+          exitOnScrollOut={false}
+          className="mt-3 max-w-2xl text-sm text-white/90 drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] md:text-base"
+        />
       </div>
 
       {slides.length > 1 && (

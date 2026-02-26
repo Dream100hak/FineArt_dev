@@ -54,6 +54,12 @@ img {
   padding-right: clamp(1.25rem, 5vw, 3rem);
 }
 
+/* 사이드바 레이아웃: 왼쪽 패딩 없이 콘텐츠가 사이드바 바로 옆에 붙도록 */
+.screen-padding-with-sidebar {
+  padding-left: 0;
+  padding-right: clamp(1.25rem, 5vw, 3rem);
+}
+
 .section {
   padding-top: clamp(3rem, 6vw, 4.5rem);
   padding-bottom: clamp(3rem, 6vw, 4.5rem);
@@ -81,4 +87,58 @@ img {
   margin: 1.5rem 0;
   width: 100%;
   object-fit: cover;
+}
+
+/* DomeGallery: lock body scroll when image enlarged */
+body.dg-scroll-lock {
+  overflow: hidden;
+}
+
+/* BoardSidebar: 화면 고정 (스크롤해도 항상 보이게) - 왼쪽 끝에 붙음 */
+.board-sidebar-fixed {
+  position: fixed;
+  top: 5rem;
+  bottom: 0;
+  width: 13rem;
+  left: 0;
+  z-index: 10;
+}
+
+/* BoardSidebar: 홈 페이지용 - 캔버스 영역에서는 안 보이고, 아래로 스크롤 시에만 sticky */
+.board-sidebar-sticky {
+  position: sticky;
+  top: 5rem;
+  min-height: calc(100vh - 5rem);
+}
+
+/* BoardSidebar: 파렛트 물감 감성 */
+.board-sidebar-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.board-sidebar-palette-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.board-sidebar-palette-drip {
+  position: relative;
+}
+
+.board-sidebar-palette-drip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 10px;
+  height: 18px;
+  transform: translateX(-60%);
+  background: inherit;
+  clip-path: polygon(15% 0, 85% 0, 100% 30%, 80% 100%, 50% 85%, 20% 100%, 0 30%);
+  margin-top: -1px;
 }
