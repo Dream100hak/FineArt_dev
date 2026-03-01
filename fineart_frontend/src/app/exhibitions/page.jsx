@@ -72,7 +72,7 @@ export default async function ExhibitionsPage({ searchParams }) {
   const hasResults = visibleExhibitions.length > 0;
 
   return (
-    <div className="screen-padding section mx-auto flex w-full max-w-7xl flex-col gap-8 py-10">
+    <div className="screen-padding section mx-auto flex w-full max-w-7xl flex-col gap-6 py-8 sm:gap-8 sm:py-10">
       <header
         className="space-y-3 rounded-3xl border p-6 shadow-sm"
         style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
@@ -125,7 +125,7 @@ export default async function ExhibitionsPage({ searchParams }) {
 
                 return (
                   <article key={exhibition.id} className="space-y-4">
-                    <div className="group relative h-[360px] w-full overflow-hidden rounded-[48px] border border-neutral-200 shadow-lg shadow-black/10 md:h-[440px]">
+                    <div className="group relative h-[240px] w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-lg shadow-black/10 sm:h-[320px] sm:rounded-[32px] md:h-[400px] md:rounded-[48px] lg:h-[440px]">
                       <img
                         src={exhibition.imageUrl}
                         alt={exhibition.title}
@@ -133,14 +133,14 @@ export default async function ExhibitionsPage({ searchParams }) {
                         loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-7 pb-7 text-white">
-                        <div className="space-y-2">
-                          <p className="text-[11px] uppercase tracking-[0.4em] text-white/70">{period}</p>
-                          <h3 className="text-3xl font-semibold leading-tight md:text-[34px]">
+                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 px-4 pb-4 text-white sm:px-6 sm:pb-6 md:px-7 md:pb-7">
+                        <div className="min-w-0 flex-1 space-y-1 sm:space-y-2">
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-white/70 sm:text-[11px] sm:tracking-[0.4em]">{period}</p>
+                          <h3 className="text-xl font-semibold leading-tight line-clamp-2 sm:text-2xl md:text-3xl md:text-[34px]">
                             {exhibition.title}
                           </h3>
                         </div>
-                        <span className="whitespace-nowrap rounded-full border border-white/40 px-4 py-1 text-xs uppercase tracking-[0.3em]">
+                        <span className="shrink-0 whitespace-nowrap rounded-full border border-white/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] sm:px-3 sm:py-1 sm:text-xs sm:tracking-[0.3em] md:px-4">
                           {badgeLabel}
                         </span>
                       </div>

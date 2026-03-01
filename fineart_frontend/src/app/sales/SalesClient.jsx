@@ -218,7 +218,7 @@ export default function SalesClient() {
 
   return (
     <main className="min-h-screen">
-      <section className="screen-padding section mx-auto flex w-full max-w-7xl flex-col gap-8 py-10">
+      <section className="screen-padding section mx-auto flex w-full max-w-7xl flex-col gap-6 py-8 sm:gap-8 sm:py-10">
         <header
           className="flex flex-col gap-4 rounded-3xl border p-6 shadow-sm md:flex-row md:items-end md:justify-between"
           style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}
@@ -296,14 +296,14 @@ export default function SalesClient() {
               >
                 렌탈 가능만 보기
               </button>
-              <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2">
+              <form onSubmit={handleSearchSubmit} className="flex w-full min-w-0 items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 sm:w-auto">
                 <FiSearch className="text-neutral-400" />
                 <input
                   type="search"
                   placeholder="작품, 작가 검색"
                   value={searchValue}
                   onChange={(event) => setSearchValue(event.target.value)}
-                  className="w-48 bg-transparent text-sm outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none sm:w-48"
                 />
                 <button type="submit" className="text-sm font-semibold text-neutral-900">
                   검색

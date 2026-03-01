@@ -53,7 +53,7 @@ export default async function ArtistsPage() {
 
 
   return (
-    <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
+    <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-6 py-8 sm:gap-8 sm:py-10">
       <header
         className="space-y-3 rounded-3xl border p-6 shadow-sm"
         style={{ backgroundColor: 'var(--board-bg)', borderColor: 'var(--board-border)' }}

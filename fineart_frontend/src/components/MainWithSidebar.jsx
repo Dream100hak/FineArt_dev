@@ -15,10 +15,10 @@ export default function MainWithSidebar({ children }) {
   }
 
   return (
-    <div className="screen-padding-with-sidebar w-full py-4 min-h-[calc(100vh-12rem)] bg-[var(--board-bg)]">
+    <div className="screen-padding-with-sidebar w-full min-w-0 py-4 min-h-[calc(100vh-12rem)] bg-[var(--board-bg)]">
       <div className="flex gap-0 min-h-full items-stretch">
         <BoardSidebar />
-        <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)] pl-52 max-w-[99rem]">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)] pl-0 lg:pl-52 max-w-[99rem]">{children}</div>
       </div>
     </div>
   );

@@ -63,7 +63,7 @@ export default function HeroCarousel({ slides }) {
   return (
     <section
       id="hero-section"
-      className="relative min-h-[90vh] cursor-grab select-none overflow-hidden bg-black"
+      className="relative min-h-[70vh] cursor-grab select-none overflow-hidden bg-black sm:min-h-[85vh] lg:min-h-[90vh]"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
@@ -95,7 +95,7 @@ export default function HeroCarousel({ slides }) {
         />
       ) : null}
 
-      <div className="relative flex min-h-[80vh] flex-col items-center justify-center px-6 py-24 text-center">
+      <div className="relative flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center sm:min-h-[75vh] sm:px-6 sm:py-24 lg:min-h-[80vh]">
         <StaggeredText
           text="Fine Art"
           as="h1"

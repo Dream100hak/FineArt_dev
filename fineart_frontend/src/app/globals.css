@@ -28,6 +28,10 @@
   --breakpoint-lg: 1024px;
 }
 
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   background:
     radial-gradient(circle at 12% 20%, #fff7ec 0, rgba(255, 247, 236, 0) 30%),

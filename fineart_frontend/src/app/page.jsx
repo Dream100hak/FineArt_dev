@@ -152,19 +152,19 @@ export default async function Home() {
       <div className="screen-padding-with-sidebar w-full py-4 min-h-[calc(100vh-12rem)] bg-[var(--board-bg)]">
         <div className="flex gap-0 min-h-full items-stretch">
           <BoardSidebar useFixedPosition="dynamic" />
-          <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)] pl-52 max-w-[99rem]">
-            <div className="mx-auto flex w-full max-w-full flex-col gap-20 px-6 py-16 md:gap-24">
+          <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)] pl-0 lg:pl-52 max-w-[99rem]">
+            <div className="mx-auto flex w-full max-w-full flex-col gap-20 px-4 py-12 sm:px-6 sm:py-16 md:gap-24">
         {/* 현재 전시 */}
         {exhibitions.length > 0 && (
           <section className="space-y-8">
-            <div className="flex items-end justify-between gap-4 border-b border-neutral-200 pb-4">
+            <div className="flex flex-col gap-4 border-b border-neutral-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Exhibition</p>
                 <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">현재 전시</h2>
               </div>
               <Link
                 href="/exhibitions"
-                className="shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+                className="shrink-0 self-start rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white sm:self-auto"
               >
                 전시 일정 보기
               </Link>
@@ -212,15 +212,15 @@ export default async function Home() {
 
         {/* 인기 작품 */}
         <section className="space-y-8">
-          <div className="relative border-b border-neutral-200 pb-4">
-            <div className="flex flex-col items-center text-center">
+          <div className="flex flex-col gap-4 border-b border-neutral-200 pb-4 sm:relative">
+            <div className="flex flex-col items-center text-center sm:flex-1">
               <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Sales</p>
               <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">지금 인기 있는 작품</h2>
               <p className="mt-2 text-sm text-neutral-500">인기 있는 작품들을 둘러보고 나만의 감성을 찾아보세요</p>
             </div>
             <Link
               href="/sales"
-              className="absolute right-0 top-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+              className="mx-auto shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white sm:absolute sm:right-0 sm:top-0 sm:mx-0"
             >
               전체 보기
             </Link>
@@ -230,20 +230,20 @@ export default async function Home() {
 
         {/* 오늘의 작품 */}
         <section className="space-y-8">
-          <div className="relative border-b border-neutral-200 pb-4">
-            <div className="flex flex-col items-center text-center">
+          <div className="flex flex-col gap-4 border-b border-neutral-200 pb-4 sm:relative">
+            <div className="flex flex-col items-center text-center sm:flex-1">
               <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">Works</p>
               <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">오늘의 작품</h2>
               <p className="mt-2 text-sm text-neutral-500">다양한 작품들을 감상해보세요</p>
             </div>
             <Link
               href="/artists"
-              className="absolute right-0 top-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+              className="mx-auto shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white sm:absolute sm:right-0 sm:top-0 sm:mx-0"
             >
               더 보기
             </Link>
           </div>
-          <div className="relative h-[720px] w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-950">
+          <div className="relative h-[380px] w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-950 sm:h-[480px] md:h-[560px] lg:h-[720px]">
             <DomeGallery
               images={
                 (() => {

@@ -77,7 +77,7 @@ export default function ArtistCarousel({
 
   return (
     <section className="space-y-8">
-      <div className="relative border-b border-neutral-200 pb-4">
+      <div className="flex flex-col gap-4 border-b border-neutral-200 pb-4 sm:relative">
         <div className="flex flex-col items-center text-center">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-neutral-500">{categoryLabel}</p>
           <h2 className="mt-1 text-3xl font-semibold text-neutral-900 md:text-4xl">{title}</h2>
@@ -86,7 +86,7 @@ export default function ArtistCarousel({
         {moreHref && (
           <Link
             href={moreHref}
-            className="absolute right-0 top-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white"
+            className="mx-auto shrink-0 rounded-full border border-neutral-900 px-5 py-2.5 text-sm font-semibold transition hover:bg-neutral-900 hover:text-white sm:absolute sm:right-0 sm:top-0 sm:mx-0"
           >
             {moreLabel}
           </Link>
