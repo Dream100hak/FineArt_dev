@@ -14,7 +14,28 @@ export default async function MuseumDetailPage({ params }) {
   const item = taxonomy.venues.find((row) => row.id === id);
   if (!item) notFound();
 
-  const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(item.address || item.name)}&output=embed`;
+  const formatAddress = (value) => {
+    const addr = (value ?? '').toString().trim();
+    if (!addr) return '';
+
+    const idx = addr.indexOf(',');
+    if (idx === -1) return addr;
+
+    const prefix = addr.slice(0, idx).trim();
+    const rest = addr.slice(idx + 1).trim();
+
+    // drop "<postal> , " prefix when missing postal becomes "- , ...".
+    if (prefix === '-' || prefix === '' || /^\d/.test(prefix)) {
+      return rest || addr;
+    }
+
+    return addr;
+  };
+
+  const formattedAddress = formatAddress(item.address);
+  const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(
+    formattedAddress || item.name,
+  )}&output=embed`;
   const isSeoul = item.major === '서울특별시';
 
   return (
@@ -56,7 +77,7 @@ export default async function MuseumDetailPage({ params }) {
         <div className="mt-6 grid gap-4 rounded-2xl border border-neutral-100 bg-neutral-50 p-4 text-sm text-neutral-700 md:grid-cols-2">
           <p className="flex items-start gap-2">
             <FiMapPin className="mt-0.5 shrink-0" />
-            {item.address || '주소 정보 없음'}
+            {formattedAddress || item.address || '주소 정보 없음'}
           </p>
           <p className="flex items-start gap-2">
             <FiPhone className="mt-0.5 shrink-0" />

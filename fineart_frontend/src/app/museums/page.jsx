@@ -19,7 +19,8 @@ const parsePage = (value, fallback) => {
 
 export default async function MuseumsPage({ searchParams }) {
   const resolved = await searchParams;
-  const major = (resolved?.major ?? '').toString();
+  const majorParam = (resolved?.major ?? '').toString();
+  const major = majorParam ? majorParam : '서울특별시';
   const district = (resolved?.district ?? '').toString();
   const type = (resolved?.type ?? '').toString();
   const keyword = (resolved?.keyword ?? '').toString();

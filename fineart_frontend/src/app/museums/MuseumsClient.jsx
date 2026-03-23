@@ -14,6 +14,25 @@ const TYPE_ICON_MAP = {
   other: FiBox,
 };
 
+const formatAddress = (value) => {
+  const addr = (value ?? '').toString().trim();
+  if (!addr) return '';
+
+  const idx = addr.indexOf(',');
+  if (idx === -1) return addr;
+
+  const prefix = addr.slice(0, idx).trim();
+  const rest = addr.slice(idx + 1).trim();
+
+  // addresses are typically: "<postal> , <street...>".
+  // Some rows have "<postal> missing" and become "- , ...", so drop the prefix.
+  if (prefix === '-' || prefix === '' || /^\d/.test(prefix)) {
+    return rest || addr;
+  }
+
+  return addr;
+};
+
 const buildNextUrl = (pathname, searchParams, updates) => {
   const params = new URLSearchParams(searchParams?.toString() ?? '');
   Object.entries(updates).forEach(([key, value]) => {
@@ -62,8 +81,9 @@ export default function MuseumsClient({
     return found ?? items[0] ?? null;
   }, [items, selectedId]);
 
+  const mapQuery = selected ? formatAddress(selected.address) || selected.name : '';
   const mapUrl = selected
-    ? `https://www.google.com/maps?q=${encodeURIComponent(selected.address || selected.name)}&output=embed`
+    ? `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`
     : '';
 
   const handleType = (value) => {
@@ -94,7 +114,7 @@ export default function MuseumsClient({
   const handleReset = () => {
     setKeywordInput('');
     push({
-      major: undefined,
+      major: '서울특별시',
       district: undefined,
       type: undefined,
       keyword: undefined,
@@ -147,17 +167,6 @@ export default function MuseumsClient({
         <div className="relative z-10 grid gap-3">
           <div className="rb-filter-card rounded-2xl border-teal-200/80 bg-teal-50/90 p-3">
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleMajor('')}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                !major
-                  ? 'border-neutral-900 bg-neutral-900 text-white'
-                  : 'border-teal-200 bg-white text-teal-900 hover:border-neutral-300'
-              }`}
-            >
-              전체 지역
-            </button>
             {majorOptions.map((r) => {
               const active = major === r.value;
               return (
@@ -290,7 +299,9 @@ export default function MuseumsClient({
                         <p className="mt-0.5 text-xs text-neutral-500">
                           {row.typeLabel} · {row.major} {row.district}
                         </p>
-                        <p className="mt-1 text-sm text-neutral-600">{row.address || '주소 정보 없음'}</p>
+                        <p className="mt-1 text-sm text-neutral-600">
+                          {formatAddress(row.address) || row.address || '주소 정보 없음'}
+                        </p>
                         {row.phone && <p className="mt-0.5 text-xs text-neutral-500">{row.phone}</p>}
                       </div>
                       <div
@@ -330,7 +341,9 @@ export default function MuseumsClient({
               </div>
               <div className="space-y-1 border-t border-neutral-200 bg-white p-4">
                 <h3 className="text-sm font-semibold text-neutral-900">{selected.name}</h3>
-                <p className="text-xs text-neutral-600">{selected.address || '주소 정보 없음'}</p>
+                <p className="text-xs text-neutral-600">
+                  {formatAddress(selected.address) || selected.address || '주소 정보 없음'}
+                </p>
               </div>
             </>
           ) : (
