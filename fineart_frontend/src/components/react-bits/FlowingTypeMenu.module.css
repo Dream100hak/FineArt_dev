@@ -1,0 +1,101 @@
+.menuWrap {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.menuItem {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  border-top: 1px solid;
+}
+
+.menuItem:first-child {
+  border-top: none;
+}
+
+.menuItemLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0 1rem;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.countBadge {
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.08);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.marquee {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: translate3d(0, 101%, 0);
+}
+
+.marqueeInnerWrap {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.marqueeInner {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 100%;
+  width: fit-content;
+  will-change: transform;
+}
+
+.marqueePart {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.marqueePart span {
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0 0.8vw;
+}
+
+.marqueeImg {
+  width: 128px;
+  height: 34px;
+  margin: 0.8em 1vw;
+  border-radius: 9999px;
+  background-size: cover;
+  background-position: 50% 50%;
+}

@@ -20,6 +20,7 @@ import { BOARDS_UPDATED_EVENT } from '@/lib/boardEvents';
 
 const PRIMARY_LINKS = [
   { href: '/', label: '홈', color: 'bg-lime-700' },
+  { href: '/museums', label: '미술관', color: 'bg-rose-500' },
   { href: '/exhibitions', label: '전시', color: 'bg-lime-500' },
   { href: '/sales', label: '판매', color: 'bg-amber-500' },
 ];
@@ -79,6 +80,7 @@ export default function Sidebar() {
 
   const activeSegment = useMemo(() => {
     if (!pathname) return '/';
+    if (pathname.startsWith('/museums')) return '/museums';
     if (pathname.startsWith('/exhibitions')) return '/exhibitions';
     if (pathname.startsWith('/sales')) return '/sales';
     if (pathname.startsWith('/boards')) return '/boards';

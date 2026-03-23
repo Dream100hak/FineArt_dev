@@ -15,6 +15,7 @@ import useDecodedAuth from '@/hooks/useDecodedAuth';
 import { clearAuthSession } from '@/lib/auth';
 
 const MAIN_LINKS = [
+  { href: '/museums', label: '미술관' },
   { href: '/exhibitions', label: '전시' },
   { href: '/sales', label: '판매' },
   { href: '/artists', label: '작가' },
