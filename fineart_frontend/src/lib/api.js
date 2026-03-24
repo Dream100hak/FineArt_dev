@@ -701,39 +701,120 @@ export const getBoardsSidebar = async (params = {}) => {
     // Order by order_index
     query = query.order('order_index', { ascending: true });
 
-    const { data, error } = await query;
+    const [{ data, error }, { data: tags, error: tagsError }] = await Promise.all([
+      query,
+      supabase.from('board_tags').select('name, order_index'),
+    ]);
 
     if (error) throw error;
+    if (tagsError) throw tagsError;
 
     // Convert snake_case to camelCase
     const normalizedBoards = snakeToCamel(data || []);
 
-    // Build tree structure (parent-child relationships)
     const boards = normalizedBoards;
-    const boardMap = new Map();
-    const rootBoards = [];
+    const groupMap = new Map();
 
-    // First pass: create map
     boards.forEach((board) => {
-      boardMap.set(board.id, { ...board, children: [] });
-    });
-
-    // Second pass: build tree (use camelCase parentId after normalization)
-    boards.forEach((board) => {
-      const boardNode = boardMap.get(board.id);
-      if (board.parentId && boardMap.has(board.parentId)) {
-        boardMap.get(board.parentId).children.push(boardNode);
-      } else {
-        rootBoards.push(boardNode);
+      const groupName = (board.groupName ?? '').toString().trim() || '기타';
+      if (!groupMap.has(groupName)) {
+        groupMap.set(groupName, { children: [], groupOrder: Number(board.groupOrder ?? 0) });
       }
+      const group = groupMap.get(groupName);
+      group.children.push({ ...board, children: [] });
+      group.groupOrder = Math.min(group.groupOrder, Number(board.groupOrder ?? 0));
     });
+
+    const tagOrderMap = new Map((tags || []).map((tag) => [tag.name, Number(tag.order_index ?? 0)]));
+
+    const groupedItems = Array.from(groupMap.entries())
+      .sort(([aName, aData], [bName, bData]) => {
+        const aOrder = tagOrderMap.get(aName) ?? aData.groupOrder ?? 0;
+        const bOrder = tagOrderMap.get(bName) ?? bData.groupOrder ?? 0;
+        const orderCompare = aOrder - bOrder;
+        if (orderCompare !== 0) return orderCompare;
+        return aName.localeCompare(bName, 'ko-KR');
+      })
+      .map(([groupName, groupData]) => ({
+        id: `group-${groupName}`,
+        name: groupName,
+        slug: null,
+        isGroup: true,
+        groupOrder: groupData.groupOrder ?? 0,
+        children: groupData.children.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)),
+      }));
 
     return {
-      items: rootBoards,
+      items: groupedItems,
       total: boards.length,
     };
   } catch (error) {
     handleSupabaseError(error, 'GET /api/boards/sidebar');
+  }
+};
+
+// ============================================
+// BOARD TAGS
+// ============================================
+
+export const getBoardTags = async () => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('board_tags')
+      .select('*')
+      .order('order_index', { ascending: true });
+
+    if (error) throw error;
+    return snakeToCamel(data || []);
+  } catch (error) {
+    handleSupabaseError(error, 'GET /api/board-tags');
+  }
+};
+
+export const createBoardTag = async (payload) => {
+  try {
+    const supabase = getSupabase();
+    const dbPayload = camelToSnake(payload);
+    const { data, error } = await supabase
+      .from('board_tags')
+      .insert(dbPayload)
+      .select()
+      .single();
+    if (error) throw error;
+    return snakeToCamel(data);
+  } catch (error) {
+    handleSupabaseError(error, 'POST /api/board-tags');
+  }
+};
+
+export const updateBoardTag = async (id, payload) => {
+  if (!id) throw new Error('Board tag id is required');
+  try {
+    const supabase = getSupabase();
+    const dbPayload = camelToSnake(payload);
+    const { data, error } = await supabase
+      .from('board_tags')
+      .update(dbPayload)
+      .eq('id', normalizeId(id))
+      .select()
+      .single();
+    if (error) throw error;
+    return snakeToCamel(data);
+  } catch (error) {
+    handleSupabaseError(error, 'PUT /api/board-tags/:id');
+  }
+};
+
+export const deleteBoardTag = async (id) => {
+  if (!id) throw new Error('Board tag id is required');
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('board_tags').delete().eq('id', normalizeId(id));
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleSupabaseError(error, 'DELETE /api/board-tags/:id');
   }
 };
 

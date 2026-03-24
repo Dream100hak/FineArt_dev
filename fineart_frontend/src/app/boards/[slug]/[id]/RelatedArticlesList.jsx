@@ -58,7 +58,7 @@ const normalizeRelatedArticle = (article, isAuthenticated) => {
     createdAt: article?.createdAt ?? article?.created_at,
     views: article?.viewCount ?? article?.view_count ?? article?.views ?? 0,
     writer,
-    writerDisplay: isAuthenticated ? writer : formatWriterWithIp(writer, guestIp),
+    writerDisplay: formatWriterWithIp(writer, guestIp),
   };
 };
 

@@ -7,7 +7,9 @@ const PATHS_WITHOUT_SIDEBAR = ['/', '/login', '/register'];
 
 export default function MainWithSidebar({ children }) {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAdminPath = pathname?.startsWith('/admin');
+  const allowSidebarOnAdmin = pathname?.startsWith('/admin/boards');
+  const isAdmin = isAdminPath && !allowSidebarOnAdmin;
   const skipSidebar = PATHS_WITHOUT_SIDEBAR.includes(pathname) || isAdmin;
 
   if (skipSidebar) {

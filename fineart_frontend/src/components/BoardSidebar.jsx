@@ -89,10 +89,11 @@ const BoardSidebar = ({ activeSlug, useFixedPosition = true }) => {
 
   const renderBoardNodes = (nodes = [], depth = 0) =>
     nodes.map((node, idx) => {
-      const href = `/boards/${node.slug}`;
+      const href = node.slug ? `/boards/${node.slug}` : null;
       const hasChildren = Array.isArray(node.children) && node.children.length > 0;
       const isCollapsed = collapsedMap[node.id];
       const isActive = resolvedActiveSlug === node.slug;
+      const isGroupNode = Boolean(node.isGroup);
       const colorIndex = (depth * 5 + idx) % PALETTE_COLORS.length;
       const dotColor = PALETTE_COLORS[colorIndex];
 
@@ -100,9 +101,11 @@ const BoardSidebar = ({ activeSlug, useFixedPosition = true }) => {
         <div key={node.id} className="space-y-0.5">
           <div
             className={`group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition ${
-              isActive
-                ? 'bg-[var(--board-text)] text-white'
-                : 'hover:bg-[var(--board-row-hover)]'
+              isGroupNode
+                ? 'mt-2 border-t pt-3'
+                : isActive
+                  ? 'bg-[var(--board-text)] text-white'
+                  : 'hover:bg-[var(--board-row-hover)]'
             }`}
             style={{ paddingLeft: `${depth * 10}px`, color: isActive ? 'white' : 'var(--board-text)' }}
           >
@@ -126,9 +129,13 @@ const BoardSidebar = ({ activeSlug, useFixedPosition = true }) => {
                 aria-hidden
               />
             )}
-            <Link href={href} className="flex-1 min-w-0 truncate text-[13px]">
-              {node.name}
-            </Link>
+            {href ? (
+              <Link href={href} className="flex-1 min-w-0 truncate text-[13px]">
+                {node.name}
+              </Link>
+            ) : (
+              <span className="flex-1 min-w-0 truncate text-[13px] font-semibold">{node.name}</span>
+            )}
           </div>
           {hasChildren && !isCollapsed && (
             <div className="space-y-0.5 border-l border-dashed pl-1.5 ml-1" style={{ borderColor: 'var(--board-border)' }}>

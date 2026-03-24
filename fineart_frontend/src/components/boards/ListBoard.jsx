@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { FiImage } from 'react-icons/fi';
 import { formatBoardPostDate } from '@/lib/date';
 
 const CATEGORY_LABELS = {
@@ -54,7 +55,7 @@ export default function ListBoard({ board, articles, meta }) {
 
   /* 한신아트 게시판 테이블 양식: header #F5F5F5, border #EEEEEE, row hover #F8F9FA, 공지 plain-text */
   return (
-    <div className="bg-[var(--board-bg)] shadow-sm" style={{ border: 'none' }}>
+    <div className="bg-[var(--board-bg)]" style={{ border: 'none' }}>
       <div
         className="hidden sm:grid sm:grid-cols-[90px_110px_1fr_140px_120px_80px] border-b text-xs font-medium uppercase tracking-wide"
         style={{
@@ -86,6 +87,7 @@ export default function ListBoard({ board, articles, meta }) {
           const numberDisplay = isNotice ? '-' : ord > 0 ? ord : article.id;
           const categoryLabel =
             CATEGORY_LABELS[normalizedCategory] ?? CATEGORY_LABELS[DEFAULT_CATEGORY] ?? normalizedCategory;
+          const hasImage = Boolean(article.thumbnailUrl || article.imageUrl);
 
           return (
             <div
@@ -119,10 +121,23 @@ export default function ListBoard({ board, articles, meta }) {
               <div className="min-w-0">
                 <Link
                   href={`/boards/${slug}/${article.id}`}
-                  className="block truncate font-normal hover:opacity-80"
+                  className="flex items-center gap-2 truncate font-normal hover:opacity-80"
                   style={{ color: 'var(--board-text)' }}
                 >
-                  {article.title}
+                  <FiImage
+                    size={14}
+                    className={`shrink-0 rounded p-[2px] ${
+                      hasImage
+                        ? 'bg-gradient-to-br from-sky-500 to-violet-500 text-white'
+                        : 'bg-neutral-200 text-neutral-500'
+                    }`}
+                    style={{
+                      color: hasImage ? '#ffffff' : undefined,
+                      opacity: 1,
+                    }}
+                    aria-hidden
+                  />
+                  <span className="truncate">{article.title}</span>
                 </Link>
               </div>
               <div style={{ color: 'var(--board-text-secondary)' }}>

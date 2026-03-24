@@ -23,9 +23,7 @@ const ARTICLE_CATEGORY_OPTIONS = [
 const defaultForm = {
   title: '',
   writer: '',
-  email: '',
   guestPassword: '',
-  guestPasswordConfirm: '',
   content: '',
   category: 'general',
   isPinned: false,
@@ -42,9 +40,7 @@ export default function BoardEditorClient({ board, initialArticle }) {
   const [form, setForm] = useState({
     title: initialArticle?.title ?? defaultForm.title,
     writer: initialArticle?.writer ?? defaultForm.writer,
-    email: initialArticle?.email ?? decodedEmail ?? defaultForm.email,
     guestPassword: defaultForm.guestPassword,
-    guestPasswordConfirm: defaultForm.guestPasswordConfirm,
     content: initialArticle?.content ?? defaultForm.content,
     category: initialArticle?.category?.toLowerCase?.() ?? defaultForm.category,
     isPinned: initialArticle?.isPinned ?? defaultForm.isPinned,
@@ -60,7 +56,6 @@ export default function BoardEditorClient({ board, initialArticle }) {
       setForm((prev) => ({
         ...prev,
         writer: prev.writer || decodedEmail.split('@')[0],
-        email: prev.email || decodedEmail,
       }));
     }
   }, [decodedEmail, initialArticle?.writer]);
@@ -72,7 +67,6 @@ export default function BoardEditorClient({ board, initialArticle }) {
     setForm((prev) => ({
       ...prev,
       guestPassword: prev.guestPassword || cached,
-      guestPasswordConfirm: prev.guestPasswordConfirm || cached,
     }));
   }, [initialArticle?.id, isAuthenticated, isEditing]);
 
@@ -107,10 +101,6 @@ export default function BoardEditorClient({ board, initialArticle }) {
         setError('비회원 비밀번호는 4자 이상 입력해 주세요.');
         return;
       }
-      if (!isEditing && password !== form.guestPasswordConfirm.trim()) {
-        setError('비밀번호 확인이 일치하지 않습니다.');
-        return;
-      }
     }
 
     setSaving(true);
@@ -123,8 +113,8 @@ export default function BoardEditorClient({ board, initialArticle }) {
         title: form.title.trim(),
         content: form.content,
         writer: form.writer.trim() || '익명',
-        author: form.email.trim() || decodedEmail || 'guest@fineart.local',
-        email: form.email.trim() || null,
+        author: decodedEmail || 'guest@fineart.local',
+        email: null,
         category: form.category,
         thumbnailUrl: null,
         isPinned: form.isPinned ?? false,
@@ -226,16 +216,6 @@ export default function BoardEditorClient({ board, initialArticle }) {
                   placeholder="닉네임 또는 이름"
                 />
               </label>
-              <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
-                이메일 (선택)
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
-                  placeholder="guest@example.com"
-                />
-              </label>
               {!isAuthenticated && (
                 <>
                   <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
@@ -248,18 +228,6 @@ export default function BoardEditorClient({ board, initialArticle }) {
                       placeholder="수정/삭제에 사용할 비밀번호 (4자 이상)"
                     />
                   </label>
-                  {!isEditing && (
-                    <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
-                      비밀번호 확인
-                      <input
-                        type="password"
-                        value={form.guestPasswordConfirm}
-                        onChange={(event) => setForm((prev) => ({ ...prev, guestPasswordConfirm: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
-                        placeholder="비밀번호를 다시 입력해 주세요"
-                      />
-                    </label>
-                  )}
                 </>
               )}
 
@@ -293,16 +261,11 @@ export default function BoardEditorClient({ board, initialArticle }) {
             onChange={(content) => setForm((prev) => ({ ...prev, content }))}
             readOnly={editorReadOnly}
             placeholder="내용을 입력해 주세요. 이미지를 넣으면 갤러리형 게시판에서 목록 썸네일로 사용됩니다."
-            onUploadImage={isAuthenticated ? handleEditorImageUpload : undefined}
+            onUploadImage={handleEditorImageUpload}
           />
             <p className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>
               이미지, 링크, 서식을 자유롭게 사용하세요. 본문에 넣은 첫 번째 이미지가 갤러리형 목록에 썸네일로 표시됩니다.
             </p>
-            {!isAuthenticated && (
-              <p className="text-xs text-amber-700">
-                비로그인 작성자는 이미지 업로드가 제한될 수 있습니다. 필요하면 이미지 URL 삽입을 사용해 주세요.
-              </p>
-            )}
           </section>
 
           <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-6" style={{ borderColor: 'var(--board-border)' }}>

@@ -144,9 +144,7 @@ export default function BoardArticlesClient({ board, initialData }) {
             if (!normalized) return null;
             return {
               ...normalized,
-              writerDisplay: isAuthenticated
-                ? normalized.writer
-                : formatWriterWithIp(normalized.writer, normalized.guestIp),
+              writerDisplay: formatWriterWithIp(normalized.writer, normalized.guestIp),
             };
           })
           .filter(Boolean),
@@ -193,9 +191,7 @@ export default function BoardArticlesClient({ board, initialData }) {
                 if (!normalized) return null;
                 return {
                   ...normalized,
-                  writerDisplay: isAuthenticated
-                    ? normalized.writer
-                    : formatWriterWithIp(normalized.writer, normalized.guestIp),
+                  writerDisplay: formatWriterWithIp(normalized.writer, normalized.guestIp),
                 };
               })
               .filter(Boolean),
@@ -345,8 +341,7 @@ export default function BoardArticlesClient({ board, initialData }) {
   return (
     <div className="w-full bg-[var(--board-bg)]">
       <header
-        className="w-full border-b shadow-sm bg-[var(--board-bg)] py-5 px-4"
-        style={{ borderColor: 'var(--board-border)' }}
+        className="w-full bg-[var(--board-bg)] py-5"
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -391,7 +386,7 @@ export default function BoardArticlesClient({ board, initialData }) {
       </header>
 
       <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)]">
-        <section className="space-y-3 rounded-lg border p-4 bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
+        <section className="space-y-3 bg-[var(--board-bg)]">
             {renderContent()}
 
             <BoardListControls
