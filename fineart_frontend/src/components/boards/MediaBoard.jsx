@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { FiPlay } from 'react-icons/fi';
-import { formatKoreanDate } from '@/lib/date';
+import { formatBoardPostDate } from '@/lib/date';
 
 const fallbackThumb = (seed) =>
   `https://picsum.photos/seed/media-${seed}/640/360`;
@@ -45,7 +45,7 @@ export default function MediaBoard({ board, articles }) {
               </Link>
               <p className="text-sm line-clamp-2" style={{ color: 'var(--board-text-secondary)' }}>{article.excerpt}</p>
               <p className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>
-                {formatKoreanDate(article.createdAt)} · {article.writer}
+                {formatBoardPostDate(article.createdAt)} | {article.writerDisplay ?? article.writer}
               </p>
             </div>
           </article>

@@ -15,6 +15,7 @@ import useDecodedAuth from '@/hooks/useDecodedAuth';
 import { clearAuthSession } from '@/lib/auth';
 
 const MAIN_LINKS = [
+  { href: '/boards', label: '게시판' },
   { href: '/museums', label: '미술관' },
   { href: '/exhibitions', label: '전시' },
   { href: '/sales', label: '판매' },
@@ -246,17 +247,6 @@ export default function TopNav() {
               </Link>
             )}
 
-            <Link
-              href="/boards"
-              onClick={() => setIsMobileOpen(false)}
-              className={`block rounded-2xl px-4 py-3 text-base font-semibold transition ${
-                activeSegment === '/boards'
-                  ? 'bg-neutral-900 text-white shadow-md'
-                  : 'bg-neutral-50 text-neutral-800 hover:bg-neutral-900/10'
-              }`}
-            >
-              게시판
-            </Link>
           </div>
 
           <div className="mt-4 border-t border-neutral-200 pt-4">{renderAuthActions('mobile')}</div>

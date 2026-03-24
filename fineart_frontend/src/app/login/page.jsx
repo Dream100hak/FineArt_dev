@@ -82,9 +82,6 @@ export default function LoginPage() {
         <h1 className="text-4xl font-bold" style={{ color: 'var(--board-text)' }}>
           로그인
         </h1>
-        <p className="text-sm" style={{ color: 'var(--board-text-secondary)' }}>
-          관리자 또는 회원 계정으로 FineArt 서비스를 이용하세요.
-        </p>
       </div>
 
       <div

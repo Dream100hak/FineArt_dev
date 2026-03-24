@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import useDecodedAuth from '@/hooks/useDecodedAuth';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { getBoardArticles } from '@/lib/api';
+import { getBoardArticles, getBoardPageByDate } from '@/lib/api';
 import ListBoard from '@/components/boards/ListBoard';
 import MediaBoard from '@/components/boards/MediaBoard';
 import TimelineBoard from '@/components/boards/TimelineBoard';
 import ShowcaseBoard from '@/components/boards/ShowcaseBoard';
+import BoardListControls from '@/components/boards/BoardListControls';
+import { formatWriterWithIp } from '@/lib/guestIdentity';
+import useDecodedAuth from '@/hooks/useDecodedAuth';
 
 const stripHtml = (value = '') =>
   value
@@ -83,15 +85,21 @@ const normalizeArticle = (article, index) => {
   const plainExcerpt = stripHtml(excerptSource)?.slice(0, 160) ?? '';
   const rawCategory = pickCategoryValue(article);
   const isNoticeFlag = Boolean(article.isPinned ?? article.IsPinned ?? article.isBoard ?? article.IsBoard);
+  const resolvedWriter = article.writer ?? article.author ?? 'FineArt';
   return {
     id: article.id ?? article.Id ?? `article-${index}`,
     title: article.title ?? '제목 미정',
     content,
     excerpt: plainExcerpt || '내용을 불러오지 못했습니다.',
-    writer: article.author ?? article.writer ?? 'FineArt',
+    writer: resolvedWriter,
+    guestIp: article.guestIp ?? article.guest_ip ?? '',
+    writerDisplay: formatWriterWithIp(
+      resolvedWriter,
+      article.guestIp ?? article.guest_ip,
+    ),
     category: isNoticeFlag ? 'notice' : normalizeCategoryValue(rawCategory),
     createdAt: article.createdAt ?? article.updatedAt ?? article.UpdatedAt ?? new Date().toISOString(),
-    views: article.views ?? 0,
+    views: article.viewCount ?? article.view_count ?? article.views ?? 0,
     boardSlug: boardInfo.slug ?? article.boardSlug ?? boardInfo?.Slug ?? '',
     imageUrl: article.imageUrl ?? article.heroImage ?? '',
     thumbnailUrl:
@@ -119,9 +127,8 @@ const sortArticles = (items) => {
 };
 
 export default function BoardArticlesClient({ board, initialData }) {
-  const { decodedRole, isAuthenticated } = useDecodedAuth();
-  const isAdmin = decodedRole === 'admin';
-  const canWrite = isAuthenticated && !initialData?.isFallback;
+  const { isAuthenticated } = useDecodedAuth();
+  const canWrite = !initialData?.isFallback;
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -129,8 +136,22 @@ export default function BoardArticlesClient({ board, initialData }) {
   }, []);
 
   const normalizedInitialArticles = useMemo(
-    () => sortArticles((initialData.items ?? []).map(normalizeArticle).filter(Boolean)),
-    [initialData.items],
+    () =>
+      sortArticles(
+        (initialData.items ?? [])
+          .map((article, index) => {
+            const normalized = normalizeArticle(article, index);
+            if (!normalized) return null;
+            return {
+              ...normalized,
+              writerDisplay: isAuthenticated
+                ? normalized.writer
+                : formatWriterWithIp(normalized.writer, normalized.guestIp),
+            };
+          })
+          .filter(Boolean),
+      ),
+    [initialData.items, isAuthenticated],
   );
 
   const [currentBoard, setCurrentBoard] = useState(initialData.board ?? board);
@@ -143,20 +164,43 @@ export default function BoardArticlesClient({ board, initialData }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialData.error ?? null);
   const [isFallback, setIsFallback] = useState(initialData.isFallback ?? false);
-  const [searchField, setSearchField] = useState('title');
+  const [searchField, setSearchField] = useState('all');
   const [searchValue, setSearchValue] = useState('');
+  const [appliedSearchField, setAppliedSearchField] = useState('all');
+  const [appliedSearchValue, setAppliedSearchValue] = useState('');
+  const [jumpDateTime, setJumpDateTime] = useState('');
+  const [jumpingByDate, setJumpingByDate] = useState(false);
 
   const fetchArticles = useCallback(
-    async (pageOverride = 1) => {
+    async (pageOverride = 1, overrides = {}) => {
       setLoading(true);
       setError(null);
       try {
+        const effectiveSearchValue = overrides.searchValue ?? appliedSearchValue;
+        const effectiveSearchField = overrides.searchField ?? appliedSearchField;
         const payload = await getBoardArticles(board.slug, {
           page: pageOverride,
           size: meta.size,
+          keyword: effectiveSearchValue || undefined,
+          searchField: effectiveSearchField,
         });
 
-        setArticles(sortArticles((payload?.items ?? []).map(normalizeArticle).filter(Boolean)));
+        setArticles(
+          sortArticles(
+            (payload?.items ?? [])
+              .map((article, index) => {
+                const normalized = normalizeArticle(article, index);
+                if (!normalized) return null;
+                return {
+                  ...normalized,
+                  writerDisplay: isAuthenticated
+                    ? normalized.writer
+                    : formatWriterWithIp(normalized.writer, normalized.guestIp),
+                };
+              })
+              .filter(Boolean),
+          ),
+        );
         setMeta({
           page: payload?.page ?? pageOverride,
           size: payload?.size ?? meta.size,
@@ -174,7 +218,7 @@ export default function BoardArticlesClient({ board, initialData }) {
         setLoading(false);
       }
     },
-    [board.slug, meta.size],
+    [appliedSearchField, appliedSearchValue, board.slug, isAuthenticated, meta.size],
   );
 
   useEffect(() => {
@@ -206,21 +250,7 @@ export default function BoardArticlesClient({ board, initialData }) {
   ]);
 
   const totalPages = Math.max(1, Math.ceil(meta.total / meta.size));
-  const normalizedSearch = searchValue.trim().toLowerCase();
-  const filteredArticles = useMemo(() => {
-    if (!normalizedSearch) return articles;
-    return articles.filter((article) => {
-      const target =
-        searchField === 'writer'
-          ? article.writer ?? ''
-          : article.title ?? '';
-      return target.toString().toLowerCase().includes(normalizedSearch);
-    });
-  }, [articles, normalizedSearch, searchField]);
-  const displayTotal =
-    normalizedSearch && Number.isFinite(filteredArticles.length)
-      ? filteredArticles.length
-      : meta.total ?? filteredArticles.length;
+  const displayTotal = meta.total ?? articles.length;
 
   const handlePageChange = (direction) => {
     const nextPage =
@@ -228,6 +258,50 @@ export default function BoardArticlesClient({ board, initialData }) {
     if (nextPage === meta.page) return;
     fetchArticles(nextPage);
   };
+
+  const handleSearchSubmit = () => {
+    const nextValue = searchValue.trim();
+    const nextField = searchField;
+    setAppliedSearchField(nextField);
+    setAppliedSearchValue(nextValue);
+    fetchArticles(1, { searchValue: nextValue, searchField: nextField });
+  };
+
+  const handleSearchClear = () => {
+    setSearchValue('');
+    setAppliedSearchField('all');
+    setAppliedSearchValue('');
+    setSearchField('all');
+    fetchArticles(1, { searchValue: '', searchField: 'all' });
+  };
+
+  const handlePageSelect = (page) => {
+    const nextPage = Math.max(1, Math.min(page, totalPages));
+    if (nextPage === meta.page) return;
+    fetchArticles(nextPage);
+  };
+
+  const handleJumpToDate = async () => {
+    if (!jumpDateTime || jumpingByDate) return;
+    try {
+      setJumpingByDate(true);
+      const page = await getBoardPageByDate(board.slug, jumpDateTime, meta.size);
+      handlePageSelect(page ?? 1);
+    } catch (err) {
+      console.error('[Board] Failed to jump by date:', err);
+      setError('날짜 기준 페이지 이동에 실패했습니다.');
+    } finally {
+      setJumpingByDate(false);
+    }
+  };
+
+  const pageButtons = useMemo(() => {
+    const windowSize = 10;
+    const currentGroup = Math.floor((meta.page - 1) / windowSize);
+    const start = currentGroup * windowSize + 1;
+    const end = Math.min(totalPages, start + windowSize - 1);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  }, [meta.page, totalPages]);
 
   const layoutComponents = {
     card: ShowcaseBoard, // 레거시: 카드형 제거 후 기존 데이터용
@@ -248,7 +322,7 @@ export default function BoardArticlesClient({ board, initialData }) {
       );
     }
 
-    if (filteredArticles.length === 0) {
+    if (articles.length === 0) {
       return (
         <div className="rounded-3xl border border-dashed p-10 text-center text-sm bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}>
           조건에 맞는 게시글이 없습니다. 다른 검색어나 카테고리를 선택해 주세요.
@@ -262,7 +336,7 @@ export default function BoardArticlesClient({ board, initialData }) {
     return (
       <LayoutComponent
         board={currentBoard ?? board}
-        articles={filteredArticles}
+        articles={articles}
         meta={meta}
       />
     );
@@ -289,29 +363,17 @@ export default function BoardArticlesClient({ board, initialData }) {
                   {displayTotal?.toLocaleString() ?? currentBoard?.articleCount ?? 0}
                 </span>
               </p>
-              {mounted ? (
-                canWrite ? (
-                  <Link
-                    href={`/boards/${board.slug}/write`}
-                    className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2 font-semibold text-white transition hover:bg-neutral-800"
-                  >
-                    글쓰기
-                  </Link>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="rounded-full border border-neutral-200 px-4 py-2 text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
-                  >
-                    로그인 후 글쓰기
-                  </Link>
-                )
-              ) : (
+              {mounted && canWrite ? (
                 <Link
-                  href="/login"
-                  className="rounded-full border border-neutral-200 px-4 py-2 text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+                  href={`/boards/${board.slug}/write`}
+                  className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-5 py-2 font-semibold text-white transition hover:bg-neutral-800"
                 >
-                  로그인 후 글쓰기
+                  글쓰기
                 </Link>
+              ) : (
+                <span className="rounded-full border border-neutral-200 px-4 py-2 text-neutral-500">
+                  현재 글쓰기 준비 중
+                </span>
               )}
             </div>
           </div>
@@ -330,72 +392,29 @@ export default function BoardArticlesClient({ board, initialData }) {
 
       <div className="flex min-w-0 flex-1 flex-col bg-[var(--board-bg)]">
         <section className="space-y-3 rounded-lg border p-4 bg-[var(--board-bg)]" style={{ borderColor: 'var(--board-border)' }}>
-            <form
-              className="flex flex-col gap-2 rounded-lg border p-3 text-sm md:flex-row md:items-center md:gap-3 bg-[var(--board-bg-secondary)]"
-              style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
-              onSubmit={(event) => event.preventDefault()}
-            >
-              <div className="flex items-center gap-2">
-                <label className="text-xs uppercase tracking-[0.25em] font-medium">검색 기준</label>
-                <select
-                  value={searchField}
-                  onChange={(event) => setSearchField(event.target.value)}
-                  className="rounded-xl border px-3 py-2 text-sm focus:outline-none bg-[var(--board-bg)]"
-                  style={{ borderColor: 'var(--board-border)', color: 'var(--board-text)' }}
-                >
-                  <option value="title">글 제목</option>
-                  <option value="writer">작성자</option>
-                </select>
-              </div>
-              <div className="flex flex-1 items-center gap-3">
-                <input
-                  type="search"
-                  value={searchValue}
-                  onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="검색어를 입력하세요"
-                  className="flex-1 rounded-xl border px-4 py-2 text-sm focus:outline-none bg-[var(--board-bg)]"
-                  style={{ borderColor: 'var(--board-border)', color: 'var(--board-text)' }}
-                />
-                {searchValue && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchValue('')}
-                    className="rounded-full border px-4 py-2 text-sm transition hover:opacity-80"
-                    style={{ borderColor: 'var(--board-border)', color: 'var(--board-text-secondary)' }}
-                  >
-                    초기화
-                  </button>
-                )}
-              </div>
-            </form>
-
             {renderContent()}
 
-            {!normalizedSearch && (
-              <div className="flex flex-col items-center gap-3 text-sm md:flex-row md:justify-between" style={{ color: 'var(--board-text-secondary)' }}>
-                <p>
-                  {meta.page} / {totalPages} 페이지
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange('prev')}
-                    className="rounded-full border border-neutral-200 px-4 py-2 transition hover:border-neutral-900 hover:text-neutral-900 disabled:opacity-40"
-                    disabled={meta.page <= 1}
-                  >
-                    이전
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange('next')}
-                    className="rounded-full border border-neutral-200 px-4 py-2 transition hover:border-neutral-900 hover:text-neutral-900 disabled:opacity-40"
-                    disabled={meta.page >= totalPages}
-                  >
-                    다음
-                  </button>
-                </div>
-              </div>
-            )}
+            <BoardListControls
+              searchField={searchField}
+              setSearchField={setSearchField}
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              onSubmitSearch={handleSearchSubmit}
+              onClearSearch={handleSearchClear}
+              showPagination={!appliedSearchValue && totalPages > 1}
+              pageButtons={pageButtons}
+              currentPage={meta.page}
+              totalPages={totalPages}
+              onFirstPage={() => handlePageSelect(1)}
+              onPrevPage={() => handlePageChange('prev')}
+              onSelectPage={handlePageSelect}
+              onNextPage={() => handlePageChange('next')}
+              onLastPage={() => handlePageSelect(totalPages)}
+              jumpDateTime={jumpDateTime}
+              setJumpDateTime={setJumpDateTime}
+              onJumpToDate={handleJumpToDate}
+              jumpingByDate={jumpingByDate}
+            />
         </section>
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatKoreanDate } from '@/lib/date';
+import { formatBoardPostDate } from '@/lib/date';
 
 const fallbackImage = (seed = 0) =>
   `https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=${760 + seed}&q=80`;
@@ -60,7 +60,7 @@ export default function ShowcaseBoard({ board, articles }) {
               <h3 className="text-xl font-semibold line-clamp-2" style={{ color: 'var(--board-text)' }}>{article.title}</h3>
               <div className="flex items-center justify-between text-xs" style={{ color: 'var(--board-text-secondary)' }}>
                 <span>
-                  {article.writer ?? 'FineArt'} · {formatKoreanDate(article.createdAt)}
+                  {article.writerDisplay ?? article.writer ?? 'FineArt'} | {formatBoardPostDate(article.createdAt)}
                 </span>
                 <span>조회 {article.views?.toLocaleString?.() ?? article.views ?? 0}</span>
               </div>

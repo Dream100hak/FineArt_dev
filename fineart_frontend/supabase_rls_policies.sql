@@ -156,10 +156,13 @@ CREATE POLICY "Public read access for articles"
   ON articles FOR SELECT
   USING (true);
 
--- Authenticated users can create articles
-CREATE POLICY "Authenticated users can create articles"
+-- Anonymous users can create articles
+CREATE POLICY "Anonymous users can create articles"
   ON articles FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (
+    board_id IS NOT NULL
+    AND coalesce(length(trim(title)), 0) > 0
+  );
 
 -- Users can update their own articles
 -- Note: Uses helper function to get email from profiles table, avoiding RLS restrictions

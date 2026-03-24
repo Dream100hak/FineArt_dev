@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatKoreanDate } from '@/lib/date';
+import { formatBoardPostDate } from '@/lib/date';
 
 const CATEGORY_LABELS = {
   notice: '공지',
@@ -81,8 +81,9 @@ export default function ListBoard({ board, articles, meta }) {
             : normalizeCategory(article.category);
           const isNotice = normalizedCategory === 'notice';
           if (isNotice) pinnedCount += 1;
-          const ord = baseNumber - index;
-          const numberDisplay = ord > 0 ? ord : article.id;
+          const contentIndex = Math.max(0, index - pinnedCount);
+          const ord = baseNumber - contentIndex;
+          const numberDisplay = isNotice ? '-' : ord > 0 ? ord : article.id;
           const categoryLabel =
             CATEGORY_LABELS[normalizedCategory] ?? CATEGORY_LABELS[DEFAULT_CATEGORY] ?? normalizedCategory;
 
@@ -124,8 +125,12 @@ export default function ListBoard({ board, articles, meta }) {
                   {article.title}
                 </Link>
               </div>
-              <div style={{ color: 'var(--board-text-secondary)' }}>{article.writer}</div>
-              <div style={{ color: 'var(--board-text-secondary)' }}>{formatKoreanDate(article.createdAt)}</div>
+              <div style={{ color: 'var(--board-text-secondary)' }}>
+                {article.writerDisplay ?? article.writer}
+              </div>
+              <div className="whitespace-nowrap text-xs" style={{ color: 'var(--board-text-secondary)' }}>
+                {formatBoardPostDate(article.createdAt)}
+              </div>
               <div className="text-right" style={{ color: 'var(--board-text-secondary)' }}>
                 {article.views?.toLocaleString?.() ?? article.views}
               </div>

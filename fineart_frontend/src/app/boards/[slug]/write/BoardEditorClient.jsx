@@ -5,7 +5,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiArrowLeft } from 'react-icons/fi';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
-import { createArticle, updateArticle, uploadArticleImage } from '@/lib/api';
+import {
+  createArticle,
+  createGuestArticle,
+  updateArticle,
+  updateGuestArticle,
+  uploadArticleImage,
+} from '@/lib/api';
 import RichTextEditor from '@/components/RichTextEditor';
 import { notifyBoardsUpdated } from '@/lib/boardEvents';
 
@@ -18,6 +24,8 @@ const defaultForm = {
   title: '',
   writer: '',
   email: '',
+  guestPassword: '',
+  guestPasswordConfirm: '',
   content: '',
   category: 'general',
   isPinned: false,
@@ -35,6 +43,8 @@ export default function BoardEditorClient({ board, initialArticle }) {
     title: initialArticle?.title ?? defaultForm.title,
     writer: initialArticle?.writer ?? defaultForm.writer,
     email: initialArticle?.email ?? decodedEmail ?? defaultForm.email,
+    guestPassword: defaultForm.guestPassword,
+    guestPasswordConfirm: defaultForm.guestPasswordConfirm,
     content: initialArticle?.content ?? defaultForm.content,
     category: initialArticle?.category?.toLowerCase?.() ?? defaultForm.category,
     isPinned: initialArticle?.isPinned ?? defaultForm.isPinned,
@@ -55,41 +65,21 @@ export default function BoardEditorClient({ board, initialArticle }) {
     }
   }, [decodedEmail, initialArticle?.writer]);
 
+  useEffect(() => {
+    if (!isEditing || isAuthenticated || typeof window === 'undefined') return;
+    const cached = window.sessionStorage.getItem(`fineart_guest_pw:${initialArticle?.id}`);
+    if (!cached) return;
+    setForm((prev) => ({
+      ...prev,
+      guestPassword: prev.guestPassword || cached,
+      guestPasswordConfirm: prev.guestPasswordConfirm || cached,
+    }));
+  }, [initialArticle?.id, isAuthenticated, isEditing]);
+
   const handleEditorImageUpload = async (file) => {
     const result = await uploadArticleImage(file);
     return resolveUploadUrl(result);
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="screen-padding section mx-auto flex min-h-[60vh] w-full max-w-3xl flex-col items-center justify-center gap-4 text-center">
-        <p className="text-lg font-semibold text-neutral-900">로그인이 필요합니다.</p>
-        <p className="text-sm text-neutral-600">FineArt 계정으로 로그인하면 글을 작성할 수 있습니다.</p>
-        <div className="flex gap-3">
-          <Link href={`/boards/${board?.slug ?? ''}`} className="rounded-full border border-neutral-300 px-5 py-2 text-sm text-neutral-600">
-            게시판으로
-          </Link>
-          <Link href="/login" className="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white">
-            로그인
-          </Link>
-        </div>
-
-        {isAdmin && (
-          <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
-            <input
-              type="checkbox"
-              checked={form.isPinned}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, isPinned: event.target.checked }))
-              }
-              className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
-            />
-            공지글로 상단에 고정
-          </label>
-        )}
-      </div>
-    );
-  }
 
   if (editorReadOnly) {
     return (
@@ -111,6 +101,17 @@ export default function BoardEditorClient({ board, initialArticle }) {
       setError('제목과 본문을 입력해 주세요.');
       return;
     }
+    if (!isAuthenticated) {
+      const password = form.guestPassword.trim();
+      if (password.length < 4) {
+        setError('비회원 비밀번호는 4자 이상 입력해 주세요.');
+        return;
+      }
+      if (!isEditing && password !== form.guestPasswordConfirm.trim()) {
+        setError('비밀번호 확인이 일치하지 않습니다.');
+        return;
+      }
+    }
 
     setSaving(true);
     setError('');
@@ -121,19 +122,41 @@ export default function BoardEditorClient({ board, initialArticle }) {
         boardId: board.id,
         title: form.title.trim(),
         content: form.content,
-        writer: form.writer.trim() || 'FineArt 사용자',
-        author: form.email.trim() || decodedEmail || 'user@fineart.local',
+        writer: form.writer.trim() || '익명',
+        author: form.email.trim() || decodedEmail || 'guest@fineart.local',
+        email: form.email.trim() || null,
         category: form.category,
         thumbnailUrl: null,
         isPinned: form.isPinned ?? false,
       };
 
-      if (isEditing) {
-        await updateArticle(initialArticle.id, payload);
-        setSuccess('게시글이 수정되었습니다.');
+      if (!isAuthenticated) {
+        const guestPayload = {
+          ...payload,
+          email: payload.email,
+          password: form.guestPassword.trim(),
+        };
+        if (isEditing) {
+          await updateGuestArticle(initialArticle.id, guestPayload);
+          setSuccess('비회원 게시글이 수정되었습니다.');
+        } else {
+          await createGuestArticle(guestPayload);
+          setSuccess('비회원 게시글이 등록되었습니다.');
+        }
       } else {
-        await createArticle(payload);
-        setSuccess('게시글이 등록되었습니다.');
+        if (isEditing) {
+          await updateArticle(initialArticle.id, payload);
+          setSuccess('게시글이 수정되었습니다.');
+        } else {
+          await createArticle(payload);
+          setSuccess('게시글이 등록되었습니다.');
+        }
+      }
+
+      if (!isAuthenticated && typeof window !== 'undefined') {
+        if (isEditing) {
+          window.sessionStorage.removeItem(`fineart_guest_pw:${initialArticle?.id}`);
+        }
       }
       notifyBoardsUpdated();
       router.push(`/boards/${board.slug}`);
@@ -203,6 +226,42 @@ export default function BoardEditorClient({ board, initialArticle }) {
                   placeholder="닉네임 또는 이름"
                 />
               </label>
+              <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
+                이메일 (선택)
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                  className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
+                  placeholder="guest@example.com"
+                />
+              </label>
+              {!isAuthenticated && (
+                <>
+                  <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
+                    비회원 비밀번호
+                    <input
+                      type="password"
+                      value={form.guestPassword}
+                      onChange={(event) => setForm((prev) => ({ ...prev, guestPassword: event.target.value }))}
+                      className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
+                      placeholder="수정/삭제에 사용할 비밀번호 (4자 이상)"
+                    />
+                  </label>
+                  {!isEditing && (
+                    <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
+                      비밀번호 확인
+                      <input
+                        type="password"
+                        value={form.guestPasswordConfirm}
+                        onChange={(event) => setForm((prev) => ({ ...prev, guestPasswordConfirm: event.target.value }))}
+                        className="mt-1.5 w-full rounded-xl border border-neutral-200 px-4 py-2.5 focus:border-neutral-900 focus:outline-none"
+                        placeholder="비밀번호를 다시 입력해 주세요"
+                      />
+                    </label>
+                  )}
+                </>
+              )}
 
               {isAdmin && (
                 <label className="block text-sm font-medium" style={{ color: 'var(--board-text)' }}>
@@ -234,11 +293,16 @@ export default function BoardEditorClient({ board, initialArticle }) {
             onChange={(content) => setForm((prev) => ({ ...prev, content }))}
             readOnly={editorReadOnly}
             placeholder="내용을 입력해 주세요. 이미지를 넣으면 갤러리형 게시판에서 목록 썸네일로 사용됩니다."
-            onUploadImage={handleEditorImageUpload}
+            onUploadImage={isAuthenticated ? handleEditorImageUpload : undefined}
           />
             <p className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>
               이미지, 링크, 서식을 자유롭게 사용하세요. 본문에 넣은 첫 번째 이미지가 갤러리형 목록에 썸네일로 표시됩니다.
             </p>
+            {!isAuthenticated && (
+              <p className="text-xs text-amber-700">
+                비로그인 작성자는 이미지 업로드가 제한될 수 있습니다. 필요하면 이미지 URL 삽입을 사용해 주세요.
+              </p>
+            )}
           </section>
 
           <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-6" style={{ borderColor: 'var(--board-border)' }}>

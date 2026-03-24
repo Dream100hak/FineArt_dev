@@ -55,6 +55,21 @@ const applySorting = (query, sort) => {
   return query.order('created_at', { ascending: false });
 };
 
+const buildBoardSearchExpression = (keyword, searchField = 'all') => {
+  const normalizedField = String(searchField || 'all').toLowerCase();
+  if (normalizedField === 'writer') {
+    return `writer.ilike.%${keyword}%,author.ilike.%${keyword}%`;
+  }
+  if (normalizedField === 'content') {
+    return `content.ilike.%${keyword}%`;
+  }
+  if (normalizedField === 'title') {
+    return `title.ilike.%${keyword}%`;
+  }
+  // all
+  return `title.ilike.%${keyword}%,content.ilike.%${keyword}%,writer.ilike.%${keyword}%,author.ilike.%${keyword}%`;
+};
+
 // Helper function to convert camelCase to snake_case for database
 const toSnakeCase = (str) => {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
@@ -108,10 +123,28 @@ export const clearStoredSession = () => {
 // ARTICLES
 // ============================================
 
+const ARTICLE_SELECT_COLUMNS = [
+  'id',
+  'board_id',
+  'title',
+  'content',
+  'writer',
+  'author',
+  'email',
+  'guest_ip',
+  'category',
+  'view_count',
+  'image_url',
+  'thumbnail_url',
+  'is_pinned',
+  'created_at',
+  'updated_at',
+].join(', ');
+
 export const getArticles = async (params = {}) => {
   try {
     const supabase = getSupabase();
-    let query = supabase.from('articles').select('*', { count: 'exact' });
+    let query = supabase.from('articles').select(ARTICLE_SELECT_COLUMNS, { count: 'exact' });
 
     // Filter by category if provided
     if (params.category) {
@@ -159,7 +192,7 @@ export const getArticleById = async (id) => {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('articles')
-      .select('*')
+      .select(ARTICLE_SELECT_COLUMNS)
       .eq('id', normalizedId)
       .single();
 
@@ -758,10 +791,63 @@ export const getBoardArticles = async (slug, params = {}) => {
     if (boardError) throw boardError;
     if (!board) throw new Error('Board not found');
 
-    // Then get articles for this board
+    const page = params.page ?? 1;
+    const size = params.size ?? 12;
+    const from = (page - 1) * size;
+    const to = from + size - 1;
+
+    // 공지는 모든 페이지 상단 고정으로 노출
+    // (is_pinned=true 또는 category=notice)
+    if (!params.category) {
+      let noticesQuery = supabase
+        .from('articles')
+        .select(ARTICLE_SELECT_COLUMNS)
+        .eq('board_id', board.id)
+        .or('is_pinned.eq.true,category.eq.notice')
+        .order('created_at', { ascending: false });
+
+      let regularQuery = supabase
+        .from('articles')
+        .select(ARTICLE_SELECT_COLUMNS, { count: 'exact' })
+        .eq('board_id', board.id)
+        .neq('category', 'notice')
+        .not('is_pinned', 'eq', true);
+
+      // Search by keyword if provided
+      if (params.keyword || params.search) {
+        const keyword = (params.keyword || params.search).toLowerCase();
+        const searchExpr = buildBoardSearchExpression(keyword, params.searchField);
+        // 공지는 검색어와 무관하게 항상 상단 유지
+        regularQuery = regularQuery.or(searchExpr);
+      }
+
+      // 일반글은 최신순 + 페이지네이션
+      regularQuery = regularQuery.order('created_at', { ascending: false }).range(from, to);
+
+      const [
+        { data: notices, error: noticesError },
+        { data: regularItems, error: regularError, count: regularCount },
+      ] = await Promise.all([noticesQuery, regularQuery]);
+
+      if (noticesError) throw noticesError;
+      if (regularError) throw regularError;
+
+      const merged = [...(notices || []), ...(regularItems || [])];
+      const normalizedData = snakeToCamel(merged);
+
+      return {
+        items: normalizedData,
+        // 페이지 수는 일반글 기준으로 계산
+        total: regularCount || 0,
+        page,
+        size,
+      };
+    }
+
+    // Then get articles for this board (카테고리 필터일 때 기본 동작)
     let query = supabase
       .from('articles')
-      .select('*', { count: 'exact' })
+      .select(ARTICLE_SELECT_COLUMNS, { count: 'exact' })
       .eq('board_id', board.id);
 
     // Filter by category if provided
@@ -772,14 +858,15 @@ export const getBoardArticles = async (slug, params = {}) => {
     // Search by keyword if provided
     if (params.keyword || params.search) {
       const keyword = (params.keyword || params.search).toLowerCase();
-      query = query.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`);
+      const searchExpr = buildBoardSearchExpression(keyword, params.searchField);
+      query = query.or(searchExpr);
     }
 
     // Apply sorting
     query = applySorting(query, params.sort);
 
     // Apply pagination
-    query = applyPagination(query, params);
+    query = query.range(from, to);
 
     const { data, error, count } = await query;
 
@@ -791,11 +878,45 @@ export const getBoardArticles = async (slug, params = {}) => {
     return {
       items: normalizedData,
       total: count || 0,
-      page: params.page ?? 1,
-      size: params.size ?? 12,
+      page,
+      size,
     };
   } catch (error) {
     handleSupabaseError(error, 'GET /api/boards/:slug/articles');
+  }
+};
+
+export const getBoardPageByDate = async (slug, targetDateTime, pageSize = 12) => {
+  if (!slug) throw new Error('Board slug is required');
+  if (!targetDateTime) throw new Error('Target datetime is required');
+
+  try {
+    const supabase = getSupabase();
+    const date = new Date(targetDateTime);
+    if (Number.isNaN(date.getTime())) {
+      throw new Error('Invalid target datetime');
+    }
+
+    const { data: board, error: boardError } = await supabase
+      .from('boards')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (boardError) throw boardError;
+    if (!board) throw new Error('Board not found');
+
+    const { count, error: countError } = await supabase
+      .from('articles')
+      .select('id', { count: 'exact', head: true })
+      .eq('board_id', board.id)
+      .gt('created_at', date.toISOString());
+
+    if (countError) throw countError;
+
+    return Math.max(1, Math.floor((count || 0) / pageSize) + 1);
+  } catch (error) {
+    handleSupabaseError(error, 'GET /api/boards/:slug/articles/page-by-date');
   }
 };
 
@@ -818,10 +939,17 @@ export const getBoardArticleById = async (slug, id) => {
     if (boardError) throw boardError;
     if (!board) throw new Error('Board not found');
 
+    // Increment view count via SECURITY DEFINER RPC (works under RLS).
+    try {
+      await supabase.rpc('increment_article_view', { p_article_id: normalizedId });
+    } catch (viewError) {
+      console.warn('[API] Failed to increment article view:', viewError);
+    }
+
     // Then get the article
     const { data, error } = await supabase
       .from('articles')
-      .select('*')
+      .select(ARTICLE_SELECT_COLUMNS)
       .eq('id', normalizedId)
       .eq('board_id', board.id)
       .single();
@@ -933,7 +1061,7 @@ export const createArticle = async (payload) => {
     const { data, error } = await supabase
       .from('articles')
       .insert(dbPayload)
-      .select()
+      .select(ARTICLE_SELECT_COLUMNS)
       .single();
 
     if (error) throw error;
@@ -942,6 +1070,26 @@ export const createArticle = async (payload) => {
     return snakeToCamel(data);
   } catch (error) {
     handleSupabaseError(error, 'POST /api/articles');
+  }
+};
+
+export const createGuestArticle = async (payload) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.rpc('create_guest_article', {
+      p_board_id: normalizeId(payload.boardId),
+      p_title: payload.title,
+      p_content: payload.content ?? '',
+      p_writer: payload.writer ?? '익명',
+      p_email: payload.email ?? null,
+      p_category: payload.category ?? 'general',
+      p_password: payload.password,
+    });
+
+    if (error) throw error;
+    return snakeToCamel(data);
+  } catch (error) {
+    handleSupabaseError(error, 'RPC create_guest_article');
   }
 };
 
@@ -965,7 +1113,7 @@ export const updateArticle = async (id, payload) => {
       .from('articles')
       .update(dbPayload)
       .eq('id', normalizeId(id))
-      .select()
+      .select(ARTICLE_SELECT_COLUMNS)
       .single();
 
     if (error) throw error;
@@ -974,6 +1122,28 @@ export const updateArticle = async (id, payload) => {
     return snakeToCamel(data);
   } catch (error) {
     handleSupabaseError(error, 'PUT /api/articles/:id');
+  }
+};
+
+export const updateGuestArticle = async (id, payload) => {
+  if (!id) throw new Error('Article id is required');
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.rpc('update_guest_article', {
+      p_article_id: normalizeId(id),
+      p_password: payload.password,
+      p_title: payload.title,
+      p_content: payload.content ?? '',
+      p_writer: payload.writer ?? '익명',
+      p_email: payload.email ?? null,
+      p_category: payload.category ?? 'general',
+    });
+
+    if (error) throw error;
+    return snakeToCamel(data);
+  } catch (error) {
+    handleSupabaseError(error, 'RPC update_guest_article');
   }
 };
 
@@ -991,6 +1161,24 @@ export const deleteArticle = async (id) => {
     return { success: true };
   } catch (error) {
     handleSupabaseError(error, 'DELETE /api/articles/:id');
+  }
+};
+
+export const deleteGuestArticle = async (id, password) => {
+  if (!id) throw new Error('Article id is required');
+  if (!password || !password.trim()) throw new Error('Password is required');
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.rpc('delete_guest_article', {
+      p_article_id: normalizeId(id),
+      p_password: password.trim(),
+    });
+
+    if (error) throw error;
+    return { success: Boolean(data) };
+  } catch (error) {
+    handleSupabaseError(error, 'RPC delete_guest_article');
   }
 };
 
