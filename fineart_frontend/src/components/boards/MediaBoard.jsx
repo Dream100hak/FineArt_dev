@@ -41,7 +41,18 @@ export default function MediaBoard({ board, articles }) {
                 className="text-lg font-semibold hover:opacity-80"
                 style={{ color: 'var(--board-text)' }}
               >
-                {article.title}
+                <span className="inline-flex items-center gap-2">
+                  <span className="min-w-0 truncate">{article.title}</span>
+                  {Number(article.commentsTotal ?? 0) > 0 && (
+                    <span
+                      className="shrink-0 whitespace-nowrap text-[11px] font-medium text-neutral-500 leading-none"
+                      title="댓글 + 답글 수"
+                      style={{ lineHeight: 1 }}
+                    >
+                      [{article.commentsTotal}]
+                    </span>
+                  )}
+                </span>
               </Link>
               <p className="text-sm line-clamp-2" style={{ color: 'var(--board-text-secondary)' }}>{article.excerpt}</p>
               <p className="text-xs" style={{ color: 'var(--board-text-secondary)' }}>

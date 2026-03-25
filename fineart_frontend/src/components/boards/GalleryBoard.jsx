@@ -29,7 +29,18 @@ export default function GalleryBoard({ board, articles }) {
                 <p className="text-xs uppercase tracking-[0.3em]">
                   {article.category || '카테고리'}
                 </p>
-                <p className="text-lg font-semibold">{article.title}</p>
+                <div className="flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-lg font-semibold">{article.title}</p>
+                  {Number(article.commentsTotal ?? 0) > 0 && (
+                    <span
+                      className="shrink-0 whitespace-nowrap text-[11px] font-medium leading-none mt-2"
+                      title="댓글 + 답글 수"
+                      style={{ lineHeight: 1 }}
+                    >
+                      [{article.commentsTotal}]
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </Link>

@@ -89,7 +89,13 @@ export default function TopNav() {
   const showArtistAdmin = isAdmin;
 
   useEffect(() => {
-    setIsMobileOpen(false);
+    const id = window.requestAnimationFrame(() => {
+      setIsMobileOpen(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(id);
+    };
   }, [pathname]);
 
   const handleLogout = async () => {

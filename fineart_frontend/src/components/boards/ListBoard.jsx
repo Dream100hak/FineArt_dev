@@ -51,7 +51,14 @@ export default function ListBoard({ board, articles, meta }) {
   const metaSize = meta?.size ?? fallbackSize;
   const metaTotal = meta?.total ?? articles.length;
   const baseNumber = metaTotal - (metaPage - 1) * metaSize;
-  let pinnedCount = 0;
+
+  const isNoticeArticle = (article) => {
+    const isPinnedFlag = Boolean(
+      article?.isPinned ?? article?.IsPinned ?? article?.isBoard ?? article?.IsBoard,
+    );
+    const normalizedCategory = isPinnedFlag ? 'notice' : normalizeCategory(article?.category);
+    return normalizedCategory === 'notice';
+  };
 
   /* 한신아트 게시판 테이블 양식: header #F5F5F5, border #EEEEEE, row hover #F8F9FA, 공지 plain-text */
   return (
@@ -81,8 +88,10 @@ export default function ListBoard({ board, articles, meta }) {
             ? 'notice'
             : normalizeCategory(article.category);
           const isNotice = normalizedCategory === 'notice';
-          if (isNotice) pinnedCount += 1;
-          const contentIndex = Math.max(0, index - pinnedCount);
+          const pinnedCountBefore = articles
+            .slice(0, index)
+            .reduce((acc, prev) => acc + (isNoticeArticle(prev) ? 1 : 0), 0);
+          const contentIndex = Math.max(0, index - pinnedCountBefore);
           const ord = baseNumber - contentIndex;
           const numberDisplay = isNotice ? '-' : ord > 0 ? ord : article.id;
           const categoryLabel =
@@ -121,7 +130,7 @@ export default function ListBoard({ board, articles, meta }) {
               <div className="min-w-0">
                 <Link
                   href={`/boards/${slug}/${article.id}`}
-                  className="flex items-center gap-2 truncate font-normal hover:opacity-80"
+                  className="flex min-w-0 items-center gap-2 font-normal hover:opacity-80"
                   style={{ color: 'var(--board-text)' }}
                 >
                   <FiImage
@@ -137,7 +146,14 @@ export default function ListBoard({ board, articles, meta }) {
                     }}
                     aria-hidden
                   />
-                  <span className="truncate">{article.title}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {article.title}
+                    {Number(article.commentsTotal ?? 0) > 0 && (
+                      <span className="ml-1 whitespace-nowrap text-[11px] font-medium text-neutral-500">
+                        [{article.commentsTotal}]
+                      </span>
+                    )}
+                  </span>
                 </Link>
               </div>
               <div style={{ color: 'var(--board-text-secondary)' }}>

@@ -57,7 +57,20 @@ export default function ShowcaseBoard({ board, articles }) {
               <p className="text-[11px] uppercase tracking-[0.25em] font-medium" style={{ color: 'var(--board-text-secondary)' }}>
                 {resolveCategory(article.category)}
               </p>
-              <h3 className="text-xl font-semibold line-clamp-2" style={{ color: 'var(--board-text)' }}>{article.title}</h3>
+              <div className="flex items-start gap-2">
+                <h3 className="min-w-0 flex-1 text-xl font-semibold line-clamp-2" style={{ color: 'var(--board-text)' }}>
+                  {article.title}
+                </h3>
+                {Number(article.commentsTotal ?? 0) > 0 && (
+                  <span
+                    className="shrink-0 whitespace-nowrap text-[11px] font-medium text-neutral-500 leading-none mt-2"
+                    title="댓글 + 답글 수"
+                    style={{ lineHeight: 1 }}
+                  >
+                    [{article.commentsTotal}]
+                  </span>
+                )}
+              </div>
               <div className="flex items-center justify-between text-xs" style={{ color: 'var(--board-text-secondary)' }}>
                 <span>
                   {article.writerDisplay ?? article.writer ?? 'FineArt'} | {formatBoardPostDate(article.createdAt)}

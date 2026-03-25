@@ -64,7 +64,13 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => {
-    loadBoards();
+    const timer = window.setTimeout(() => {
+      void loadBoards();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [loadBoards]);
 
   useEffect(() => {

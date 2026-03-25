@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getBoardArticles, getBoardPageByDate } from '@/lib/api';
+import { getArticleCommentsTotal, getBoardArticles, getBoardPageByDate } from '@/lib/api';
 import BoardListControls from '@/components/boards/BoardListControls';
 import ListBoard from '@/components/boards/ListBoard';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
@@ -73,6 +73,7 @@ export default function RelatedArticlesList({ board, items, excludeArticleId }) 
   const [meta, setMeta] = useState({ page: 1, size: 12, total: 0 });
   const [fetchedItems, setFetchedItems] = useState(items ?? []);
   const [loading, setLoading] = useState(false);
+  const [commentsTotalById, setCommentsTotalById] = useState({});
 
   const fetchPage = useCallback(
     async (page = 1, overrides = {}) => {
@@ -116,6 +117,42 @@ export default function RelatedArticlesList({ board, items, excludeArticleId }) 
       sortArticles((fetchedItems ?? []).map((item) => normalizeRelatedArticle(item, isAuthenticated))),
     [isAuthenticated, fetchedItems],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const ids = (normalizedItems ?? []).map((a) => a?.id).filter(Boolean);
+        const uniqueIds = Array.from(new Set(ids));
+        if (uniqueIds.length === 0) {
+          if (!cancelled) setCommentsTotalById({});
+          return;
+        }
+
+        const results = await Promise.all(
+          uniqueIds.map(async (id) => {
+            const total = await getArticleCommentsTotal(id);
+            return [id, total];
+          }),
+        );
+
+        if (cancelled) return;
+        const map = {};
+        results.forEach(([id, total]) => {
+          map[id] = total;
+        });
+        setCommentsTotalById(map);
+      } catch (err) {
+        console.error('[Board] Failed to load related comments totals:', err);
+        if (!cancelled) setCommentsTotalById({});
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedItems]);
 
   const totalPages = Math.max(1, Math.ceil((meta.total || 0) / (meta.size || 12)));
   const pageButtons = useMemo(() => {
@@ -174,7 +211,10 @@ export default function RelatedArticlesList({ board, items, excludeArticleId }) 
       ) : (
         <ListBoard
           board={board}
-          articles={normalizedItems}
+          articles={(normalizedItems ?? []).map((a) => ({
+            ...a,
+            commentsTotal: commentsTotalById[a.id] ?? 0,
+          }))}
           meta={{ page: meta.page, size: meta.size, total: meta.total }}
         />
       )}

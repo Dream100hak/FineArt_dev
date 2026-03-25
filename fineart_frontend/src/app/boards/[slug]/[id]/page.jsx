@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import BoardDetailActions from '../BoardDetailActions';
-import { getBoardArticleById, getBoardArticles, getBoardBySlug } from '@/lib/api';
+import { getArticleComments, getBoardArticleById, getBoardArticles, getBoardBySlug } from '@/lib/api';
 import { findFallbackArticle, getFallbackBoard } from '@/lib/boardFallbacks';
 import ArticleAuthorMeta from './ArticleAuthorMeta';
+import ArticleCommentsClient from './ArticleCommentsClient';
 import RelatedArticlesList from './RelatedArticlesList';
 
 export const revalidate = 0;
@@ -66,6 +67,16 @@ export default async function BoardArticleDetailPage({ params }) {
   const html = isHtmlContent(content);
   const relatedArticles = await fetchRelatedArticles(board?.slug ?? slug, article.id);
 
+  const initialComments = await (async () => {
+    try {
+      const payload = await getArticleComments(article.id, { page: 1, size: 20 });
+      return payload ?? { items: [], total: 0, page: 1, size: 20 };
+    } catch (error) {
+      console.error('[Board] Failed to load initial comments:', error);
+      return { items: [], total: 0, page: 1, size: 20 };
+    }
+  })();
+
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-8">
       {article.isFallback && (
@@ -106,6 +117,10 @@ export default async function BoardArticleDetailPage({ params }) {
           />
         </div>
       </article>
+
+      <section className="space-y-3 border-t pt-6" style={{ borderColor: 'var(--board-border)' }}>
+        <ArticleCommentsClient articleId={article.id} initialData={initialComments} />
+      </section>
 
       <section className="space-y-3 border-t pt-6" style={{ borderColor: 'var(--board-border)' }}>
         <RelatedArticlesList

@@ -1264,6 +1264,297 @@ export const deleteGuestArticle = async (id, password) => {
 };
 
 // ============================================
+// ARTICLE COMMENTS
+// ============================================
+const COMMENT_SELECT_COLUMNS = [
+  'id',
+  'article_id',
+  'parent_comment_id',
+  'content',
+  'writer',
+  'author',
+  'email',
+  'guest_ip',
+  'created_at',
+  'updated_at',
+].join(', ');
+
+export const getArticleComments = async (articleId, params = {}) => {
+  if (!articleId) throw new Error('Article id is required');
+
+  try {
+    const supabase = getSupabase();
+    const page = params.page ?? 1;
+    const size = params.size ?? 20;
+    const from = (page - 1) * size;
+    const to = from + size - 1;
+
+    let query = supabase
+      .from('article_comments')
+      .select(COMMENT_SELECT_COLUMNS, { count: 'exact' })
+      .eq('article_id', normalizeId(articleId))
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    // Top-level comments: parent_comment_id IS NULL (default)
+    if (params.parentCommentId === undefined || params.parentCommentId === null) {
+      query = query.is('parent_comment_id', null);
+    } else {
+      query = query.eq('parent_comment_id', normalizeId(params.parentCommentId));
+    }
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+
+    return {
+      items: snakeToCamel(data || []),
+      total: count || 0,
+      page,
+      size,
+    };
+  } catch (error) {
+    // 마이그레이션을 아직 적용하지 않은 환경(테이블 미존재)에서 앱이 깨지지 않게 처리
+    const message = String(error?.message || '');
+    const details = String(error?.details || '');
+    const hint = String(error?.hint || '');
+    const combined = `${message} ${details} ${hint}`.toLowerCase();
+    const isMissingCommentsTable =
+      combined.includes('article_comments')
+      && (combined.includes('does not exist')
+        || combined.includes('could not find the table')
+        || combined.includes('schema cache')
+        || combined.includes('relation'));
+
+    if (isMissingCommentsTable) {
+      console.warn('[API] Comments table is missing. Returning empty comments.', {
+        articleId,
+      });
+
+      return {
+        items: [],
+        total: 0,
+        page: params.page ?? 1,
+        size: params.size ?? 20,
+      };
+    }
+
+    handleSupabaseError(error, 'GET /api/articles/:id/comments');
+  }
+};
+
+// Reply count (answers): parent_comment_id IS NOT NULL
+export const getArticleRepliesTotal = async (articleId) => {
+  if (!articleId) throw new Error('Article id is required');
+
+  try {
+    const supabase = getSupabase();
+
+    const articleIdNorm = normalizeId(articleId);
+
+    const { count, error } = await supabase
+      .from('article_comments')
+      .select('id', { count: 'exact' })
+      .eq('article_id', articleIdNorm)
+      .filter('parent_comment_id', 'not.is', null)
+      .limit(0);
+
+    if (error) throw error;
+    return count ?? 0;
+  } catch (error) {
+    const message = String(error?.message || '');
+    const details = String(error?.details || '');
+    const hint = String(error?.hint || '');
+    const combined = `${message} ${details} ${hint}`.toLowerCase();
+
+    const isMissingCommentsTable =
+      combined.includes('article_comments')
+      && (combined.includes('does not exist')
+        || combined.includes('could not find the table')
+        || combined.includes('schema cache')
+        || combined.includes('relation'));
+
+    if (isMissingCommentsTable) {
+      console.warn('[API] Comments table is missing. Returning reply total as 0.', {
+        articleId,
+      });
+      return 0;
+    }
+
+    handleSupabaseError(error, 'GET /api/articles/:id/comments/replies/total');
+  }
+};
+
+// Total comments + replies (all rows in article_comments for the article)
+export const getArticleCommentsTotal = async (articleId) => {
+  if (!articleId) throw new Error('Article id is required');
+
+  try {
+    const supabase = getSupabase();
+
+    const articleIdNorm = normalizeId(articleId);
+
+    const { count, error } = await supabase
+      .from('article_comments')
+      .select('id', { count: 'exact' })
+      .eq('article_id', articleIdNorm)
+      .limit(0);
+
+    if (error) throw error;
+    return count ?? 0;
+  } catch (error) {
+    const message = String(error?.message || '');
+    const details = String(error?.details || '');
+    const hint = String(error?.hint || '');
+    const combined = `${message} ${details} ${hint}`.toLowerCase();
+
+    const isMissingCommentsTable =
+      combined.includes('article_comments')
+      && (combined.includes('does not exist')
+        || combined.includes('could not find the table')
+        || combined.includes('schema cache')
+        || combined.includes('relation'));
+
+    if (isMissingCommentsTable) {
+      console.warn('[API] Comments table is missing. Returning comments total as 0.', {
+        articleId,
+      });
+      return 0;
+    }
+
+    handleSupabaseError(error, 'GET /api/articles/:id/comments/total');
+  }
+};
+
+export const createComment = async (payload) => {
+  try {
+    const supabase = getSupabase();
+    const dbPayload = camelToSnake(payload);
+
+    if (dbPayload.article_id) {
+      dbPayload.article_id = normalizeId(dbPayload.article_id);
+    }
+    if (dbPayload.parent_comment_id) {
+      dbPayload.parent_comment_id = normalizeId(dbPayload.parent_comment_id);
+    }
+
+    const { data, error } = await supabase
+      .from('article_comments')
+      .insert(dbPayload)
+      .select(COMMENT_SELECT_COLUMNS)
+      .single();
+
+    if (error) throw error;
+    return snakeToCamel(data);
+  } catch (error) {
+    handleSupabaseError(error, 'POST /api/articles/:id/comments');
+  }
+};
+
+export const updateComment = async (commentId, payload) => {
+  if (!commentId) throw new Error('Comment id is required');
+
+  try {
+    const supabase = getSupabase();
+    const dbPayload = camelToSnake(payload);
+    delete dbPayload.id;
+    delete dbPayload.created_at;
+    delete dbPayload.updated_at;
+
+    const { data, error } = await supabase
+      .from('article_comments')
+      .update(dbPayload)
+      .eq('id', normalizeId(commentId))
+      .select(COMMENT_SELECT_COLUMNS)
+      .single();
+
+    if (error) throw error;
+    return snakeToCamel(data);
+  } catch (error) {
+    handleSupabaseError(error, 'PUT /api/comments/:id');
+  }
+};
+
+export const deleteComment = async (commentId) => {
+  if (!commentId) throw new Error('Comment id is required');
+
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from('article_comments')
+      .delete()
+      .eq('id', normalizeId(commentId));
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    handleSupabaseError(error, 'DELETE /api/comments/:id');
+  }
+};
+
+export const createGuestComment = async (payload) => {
+  try {
+    const supabase = getSupabase();
+
+    const { data, error } = await supabase.rpc('create_guest_article_comment', {
+      p_article_id: normalizeId(payload.articleId),
+      p_parent_comment_id:
+        payload.parentCommentId === undefined || payload.parentCommentId === null
+          ? null
+          : normalizeId(payload.parentCommentId),
+      p_content: payload.content ?? '',
+      p_writer: payload.writer ?? '익명',
+      p_email: payload.email ?? null,
+      p_password: payload.password,
+    });
+
+    if (error) throw error;
+    const normalized = snakeToCamel(data);
+    return Array.isArray(normalized) ? normalized[0] : normalized;
+  } catch (error) {
+    handleSupabaseError(error, 'RPC create_guest_article_comment');
+  }
+};
+
+export const updateGuestComment = async (commentId, payload) => {
+  if (!commentId) throw new Error('Comment id is required');
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.rpc('update_guest_article_comment', {
+      p_comment_id: normalizeId(commentId),
+      p_password: payload.password,
+      p_content: payload.content ?? '',
+      p_writer: payload.writer ?? '익명',
+      p_email: payload.email ?? null,
+    });
+
+    if (error) throw error;
+    const normalized = snakeToCamel(data);
+    return Array.isArray(normalized) ? normalized[0] : normalized;
+  } catch (error) {
+    handleSupabaseError(error, 'RPC update_guest_article_comment');
+  }
+};
+
+export const deleteGuestComment = async (commentId, password) => {
+  if (!commentId) throw new Error('Comment id is required');
+  if (!password || !password.trim()) throw new Error('Password is required');
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.rpc('delete_guest_article_comment', {
+      p_comment_id: normalizeId(commentId),
+      p_password: password.trim(),
+    });
+
+    if (error) throw error;
+    return { success: Boolean(data) };
+  } catch (error) {
+    handleSupabaseError(error, 'RPC delete_guest_article_comment');
+  }
+};
+
+// ============================================
 // FILE UPLOADS (Supabase Storage)
 // ============================================
 

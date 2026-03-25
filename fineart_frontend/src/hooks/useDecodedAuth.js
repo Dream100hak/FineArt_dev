@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import useAuthContext from './useAuthContext';
 
 const normalizeRole = (role) =>
@@ -8,21 +7,10 @@ const normalizeRole = (role) =>
 
 export default function useDecodedAuth() {
   const auth = useAuthContext();
-  const [decoded, setDecoded] = useState({
-    role: normalizeRole(auth.role),
-    email: auth.email ?? null,
-  });
-
-  useEffect(() => {
-    setDecoded({
-      role: normalizeRole(auth.role),
-      email: auth.email ?? null,
-    });
-  }, [auth.role, auth.email, auth.isAuthenticated]);
 
   return {
     ...auth,
-    decodedRole: decoded.role,
-    decodedEmail: decoded.email,
+    decodedRole: normalizeRole(auth.role),
+    decodedEmail: auth.email ?? null,
   };
 }

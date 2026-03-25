@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { getBoardArticles, getBoardPageByDate } from '@/lib/api';
+import { getArticleCommentsTotal, getBoardArticles, getBoardPageByDate } from '@/lib/api';
 import ListBoard from '@/components/boards/ListBoard';
 import MediaBoard from '@/components/boards/MediaBoard';
 import TimelineBoard from '@/components/boards/TimelineBoard';
@@ -154,6 +154,7 @@ export default function BoardArticlesClient({ board, initialData }) {
 
   const [currentBoard, setCurrentBoard] = useState(initialData.board ?? board);
   const [articles, setArticles] = useState(normalizedInitialArticles);
+  const [commentsTotalById, setCommentsTotalById] = useState({});
   const [meta, setMeta] = useState({
     page: initialData.page ?? 1,
     size: initialData.size ?? 12,
@@ -248,6 +249,57 @@ export default function BoardArticlesClient({ board, initialData }) {
   const totalPages = Math.max(1, Math.ceil(meta.total / meta.size));
   const displayTotal = meta.total ?? articles.length;
 
+  const uniqueArticleIds = useMemo(() => {
+    const ids = articles.map((a) => a.id).filter(Boolean);
+    return Array.from(new Set(ids));
+  }, [articles]);
+
+  const uniqueArticleIdsKey = useMemo(
+    () => uniqueArticleIds.join('|'),
+    [uniqueArticleIds],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTotals = async () => {
+      if (uniqueArticleIds.length === 0) return;
+
+      try {
+        const results = await Promise.all(
+          uniqueArticleIds.map(async (id) => {
+            const total = await getArticleCommentsTotal(id);
+            return [id, total];
+          }),
+        );
+
+        if (cancelled) return;
+        const map = {};
+        results.forEach(([id, total]) => {
+          map[id] = total;
+        });
+        setCommentsTotalById(map);
+      } catch (err) {
+        console.error('[Board] Failed to load comments totals:', err);
+        if (!cancelled) setCommentsTotalById({});
+      }
+    };
+
+    // 목록 화면이 바뀌면(페이지/검색) 댓글+답글 배지도 함께 갱신
+    loadTotals();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uniqueArticleIdsKey, uniqueArticleIds]);
+
+  const articlesForLayout = useMemo(() => {
+    return articles.map((a) => ({
+      ...a,
+      commentsTotal: commentsTotalById[a.id] ?? 0,
+    }));
+  }, [articles, commentsTotalById]);
+
   const handlePageChange = (direction) => {
     const nextPage =
       direction === 'next' ? Math.min(meta.page + 1, totalPages) : Math.max(meta.page - 1, 1);
@@ -332,7 +384,7 @@ export default function BoardArticlesClient({ board, initialData }) {
     return (
       <LayoutComponent
         board={currentBoard ?? board}
-        articles={articles}
+        articles={articlesForLayout}
         meta={meta}
       />
     );
